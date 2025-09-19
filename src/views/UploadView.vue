@@ -117,6 +117,9 @@ import { ElMessage } from 'element-plus'
 import { UploadFilled, Loading } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
+import { ImageProcessor } from '@/utils/image'
+import { OCRService } from '@/utils/ocr'
+import { AIVisionService } from '@/utils/ai'
 import type { MemeData, CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
@@ -164,23 +167,39 @@ const processImage = async (file: File) => {
   processingProgress.value = 0
 
   try {
-    // 模拟OCR识别
-    processingMessage.value = '正在进行OCR识别...'
-    processingProgress.value = 25
-    await mockDelay(1000)
-    ocrResult.value = '这是模拟的OCR识别结果'
+    // 阶段1：图片预处理
+    processingMessage.value = '正在处理图片...'
+    processingProgress.value = 10
 
-    // 模拟AI分析
-    processingMessage.value = '正在进行AI图片分析...'
-    processingProgress.value = 75
-    await mockDelay(1500)
-    aiResult.value = '这是模拟的AI分析结果：图片包含文字和图形元素'
+    const imageInfo = await ImageProcessor.getImageInfo(file)
+    console.log('图片信息:', imageInfo)
+
+    // 阶段2：OCR识别
+    processingMessage.value = '正在进行OCR文字识别...'
+    processingProgress.value = 30
+
+    const ocrResultData = await OCRService.mockRecognize(file) // 使用模拟版本
+    ocrResult.value = ocrResultData.success ? ocrResultData.text : '未能识别文字'
+
+    // 阶段3：AI分析
+    processingMessage.value = '正在进行AI图片内容分析...'
+    processingProgress.value = 70
+
+    const aiResultData = await AIVisionService.mockDescribe(file) // 使用模拟版本
+    aiResult.value = aiResultData.success ? aiResultData.description : '未能生成描述'
+
+    // 阶段4：自动生成标签
+    processingMessage.value = '正在生成标签...'
+    processingProgress.value = 90
+
+    const autoTags = AIVisionService.generateTags(aiResult.value)
+    customTags.value = [...new Set([...customTags.value, ...autoTags])] // 合并自动标签
 
     processingProgress.value = 100
     processingMessage.value = '处理完成!'
 
-    await mockDelay(500)
   } catch (error) {
+    console.error('图片处理错误:', error)
     ElMessage.error('图片处理失败，请重试')
   } finally {
     processing.value = false
@@ -224,12 +243,13 @@ const handleUpload = async () => {
       aiDescription: aiResult.value,
       tags: customTags.value,
       uploadDate: new Date(),
-      fileSize: previewFile.value.size
+      fileSize: previewFile.value.size,
+      format: previewFile.value.type.split('/')[1]
+      // width 和 height 将在后续版本中添加
     }
 
-    // 添加到store
+    // 添加到store（addMeme方法已经包含了saveToStorage）
     memeStore.addMeme(memeData)
-    memeStore.saveToStorage()
 
     ElMessage.success('上传成功！')
 
@@ -244,6 +264,11 @@ const handleUpload = async () => {
 }
 
 const resetForm = () => {
+  // 清理图片URL资源
+  if (previewUrl.value) {
+    ImageProcessor.cleanupUrls([previewUrl.value])
+  }
+
   previewFile.value = null
   previewUrl.value = ''
   selectedCategory.value = 'emoji'
@@ -252,6 +277,8 @@ const resetForm = () => {
   ocrResult.value = ''
   aiResult.value = ''
   processing.value = false
+  processingProgress.value = 0
+  processingMessage.value = ''
   uploadRef.value?.clearFiles()
 }
 </script>

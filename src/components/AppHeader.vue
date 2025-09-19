@@ -37,6 +37,14 @@
       </div>
 
       <!-- 导航链接 -->
+      <!-- 统计信息 -->
+      <div class="flex justify-center items-center gap-6 mt-4 text-sm text-gray-600">
+        <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
+        <span>表情包: {{ memeStore.getStatistics.byCategory.emoji }}</span>
+        <span>动漫: {{ memeStore.getStatistics.byCategory.anime }}</span>
+        <span>其他: {{ memeStore.getStatistics.byCategory.other }}</span>
+      </div>
+
       <div class="flex justify-center gap-4 mt-4">
         <router-link
           to="/"
