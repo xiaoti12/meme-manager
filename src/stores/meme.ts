@@ -21,8 +21,7 @@ export const useMemeStore = defineStore('meme', () => {
     keys: [
       { name: 'filename', weight: 0.3 },
       { name: 'ocrText', weight: 0.4 },
-      { name: 'aiDescription', weight: 0.3 },
-      { name: 'tags', weight: 0.2 }
+      { name: 'aiDescription', weight: 0.3 }
     ],
     threshold: 0.4,
     includeScore: true,
@@ -46,7 +45,6 @@ export const useMemeStore = defineStore('meme', () => {
         category: 'emoji',
         ocrText: '哈哈哈',
         aiDescription: '一个开心的表情',
-        tags: ['开心', '笑脸', '高兴'],
         uploadDate: new Date(Date.now() - 86400000), // 1天前
         fileSize: 1024
       },
@@ -57,7 +55,6 @@ export const useMemeStore = defineStore('meme', () => {
         category: 'anime',
         ocrText: '呀~',
         aiDescription: '可爱的动漫少女角色',
-        tags: ['动漫', '少女', '可爱'],
         uploadDate: new Date(Date.now() - 172800000), // 2天前
         fileSize: 2048
       },
@@ -68,7 +65,6 @@ export const useMemeStore = defineStore('meme', () => {
         category: 'emoji',
         ocrText: '什么?!',
         aiDescription: '表示惊讶的面部表情',
-        tags: ['惊讶', '震惊', '不敢相信'],
         uploadDate: new Date(Date.now() - 259200000), // 3天前
         fileSize: 1536
       },
@@ -79,7 +75,6 @@ export const useMemeStore = defineStore('meme', () => {
         category: 'anime',
         ocrText: '喵~',
         aiDescription: '戴着猫耳的可爱女孩',
-        tags: ['猫耳', '萝莉', '可爱', '动漫'],
         uploadDate: new Date(Date.now() - 345600000), // 4天前
         fileSize: 3072
       },
@@ -90,7 +85,6 @@ export const useMemeStore = defineStore('meme', () => {
         category: 'emoji',
         ocrText: '呜呜呜',
         aiDescription: '伤心哭泣的表情',
-        tags: ['哭泣', '伤心', '眼泪'],
         uploadDate: new Date(Date.now() - 432000000), // 5天前
         fileSize: 2560
       }
@@ -126,8 +120,7 @@ export const useMemeStore = defineStore('meme', () => {
           result = result.filter(meme =>
             meme.filename.toLowerCase().includes(keywordLower) ||
             meme.ocrText.toLowerCase().includes(keywordLower) ||
-            meme.aiDescription.toLowerCase().includes(keywordLower) ||
-            meme.tags.some(tag => tag.toLowerCase().includes(keywordLower))
+            meme.aiDescription.toLowerCase().includes(keywordLower)
           )
         }
       } else {
@@ -136,8 +129,7 @@ export const useMemeStore = defineStore('meme', () => {
         result = result.filter(meme =>
           meme.filename.toLowerCase().includes(keywordLower) ||
           meme.ocrText.toLowerCase().includes(keywordLower) ||
-          meme.aiDescription.toLowerCase().includes(keywordLower) ||
-          meme.tags.some(tag => tag.toLowerCase().includes(keywordLower))
+          meme.aiDescription.toLowerCase().includes(keywordLower)
         )
       }
     }
@@ -276,8 +268,7 @@ export const useMemeStore = defineStore('meme', () => {
         // 数据验证和迁移
         memes.value = parsedData.map((meme: any) => ({
           ...meme,
-          uploadDate: new Date(meme.uploadDate),
-          tags: Array.isArray(meme.tags) ? meme.tags : []
+          uploadDate: new Date(meme.uploadDate)
         }))
       } else {
         initMockData()
@@ -320,8 +311,7 @@ export const useMemeStore = defineStore('meme', () => {
       if (data.memes && Array.isArray(data.memes)) {
         memes.value = data.memes.map((meme: any) => ({
           ...meme,
-          uploadDate: new Date(meme.uploadDate),
-          tags: Array.isArray(meme.tags) ? meme.tags : []
+          uploadDate: new Date(meme.uploadDate)
         }))
         updateFuseInstance()
         saveToStorage()

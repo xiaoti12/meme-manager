@@ -5,7 +5,6 @@ export interface MemeData {
   category: CategoryType
   ocrText: string
   aiDescription: string
-  tags: string[]
   uploadDate: Date
   fileSize: number
   thumbnailUrl?: string

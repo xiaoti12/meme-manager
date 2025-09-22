@@ -64,20 +64,6 @@
         </div>
       </div>
 
-      <!-- 标签 -->
-      <div v-if="meme.tags && meme.tags.length > 0" class="flex flex-wrap gap-1">
-        <el-tag
-          v-for="tag in meme.tags.slice(0, 3)"
-          :key="tag"
-          size="small"
-          type="info"
-        >
-          {{ tag }}
-        </el-tag>
-        <el-tag v-if="meme.tags.length > 3" size="small" type="info">
-          +{{ meme.tags.length - 3 }}
-        </el-tag>
-      </div>
     </div>
   </div>
 </template>

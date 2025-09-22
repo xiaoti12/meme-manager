@@ -46,29 +46,6 @@
             </el-select>
           </div>
 
-          <!-- 自定义标签 -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">🏷️ 添加标签</label>
-            <el-input
-              v-model="tagInput"
-              placeholder="输入标签，回车添加"
-              @keyup.enter="addTag"
-            >
-              <template #append>
-                <el-button @click="addTag">添加</el-button>
-              </template>
-            </el-input>
-            <div v-if="customTags.length > 0" class="flex flex-wrap gap-2 mt-2">
-              <el-tag
-                v-for="tag in customTags"
-                :key="tag"
-                closable
-                @close="removeTag(tag)"
-              >
-                {{ tag }}
-              </el-tag>
-            </div>
-          </div>
 
           <!-- 处理状态 -->
           <div v-if="processing" class="mb-6">
@@ -129,8 +106,6 @@ const uploadRef = ref()
 const previewFile = ref<File | null>(null)
 const previewUrl = ref('')
 const selectedCategory = ref<CategoryType>('emoji')
-const customTags = ref<string[]>([])
-const tagInput = ref('')
 const processing = ref(false)
 const processingMessage = ref('')
 const processingProgress = ref(0)
@@ -188,13 +163,6 @@ const processImage = async (file: File) => {
     const aiResultData = await AIVisionService.mockDescribe(file) // 使用模拟版本
     aiResult.value = aiResultData.success ? aiResultData.description : '未能生成描述'
 
-    // 阶段4：自动生成标签
-    processingMessage.value = '正在生成标签...'
-    processingProgress.value = 90
-
-    const autoTags = AIVisionService.generateTags(aiResult.value)
-    customTags.value = [...new Set([...customTags.value, ...autoTags])] // 合并自动标签
-
     processingProgress.value = 100
     processingMessage.value = '处理完成!'
 
@@ -208,20 +176,6 @@ const processImage = async (file: File) => {
 
 const mockDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-const addTag = () => {
-  const tag = tagInput.value.trim()
-  if (tag && !customTags.value.includes(tag)) {
-    customTags.value.push(tag)
-    tagInput.value = ''
-  }
-}
-
-const removeTag = (tag: string) => {
-  const index = customTags.value.indexOf(tag)
-  if (index > -1) {
-    customTags.value.splice(index, 1)
-  }
-}
 
 const handleUpload = async () => {
   if (!previewFile.value || !selectedCategory.value) {
@@ -241,7 +195,6 @@ const handleUpload = async () => {
       category: selectedCategory.value,
       ocrText: ocrResult.value,
       aiDescription: aiResult.value,
-      tags: customTags.value,
       uploadDate: new Date(),
       fileSize: previewFile.value.size,
       format: previewFile.value.type.split('/')[1]
@@ -272,8 +225,6 @@ const resetForm = () => {
   previewFile.value = null
   previewUrl.value = ''
   selectedCategory.value = 'emoji'
-  customTags.value = []
-  tagInput.value = ''
   ocrResult.value = ''
   aiResult.value = ''
   processing.value = false
