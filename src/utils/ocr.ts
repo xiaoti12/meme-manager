@@ -102,7 +102,7 @@ export class LLMVisionService {
         temperature: 0.3
       }
 
-      const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
+      const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

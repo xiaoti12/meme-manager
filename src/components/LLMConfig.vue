@@ -14,11 +14,9 @@
         <el-form-item label="API端点" prop="baseUrl" required>
           <el-input
             v-model="formData.baseUrl"
-            placeholder="例如: https://api.openai.com"
+            placeholder="例如: https://api.openai.com/v1"
             clearable
-          >
-            <template #prepend>https://</template>
-          </el-input>
+          />
           <div class="form-tip">
             支持OpenAI兼容的API端点，如OpenAI、Claude、本地模型等
           </div>
