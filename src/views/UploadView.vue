@@ -17,16 +17,37 @@
           :before-upload="beforeUpload"
           accept="image/*"
           :show-file-list="false"
+          multiple
+          :limit="20"
+          :on-exceed="handleExceed"
         >
-          <div class="upload-area">
+          <div class="upload-area" :class="{ 'drag-over': isDragOver }">
             <el-icon class="text-6xl text-gray-400 mb-4"><UploadFilled /></el-icon>
             <div class="text-lg text-gray-600 mb-2">将图片拖拽到此处，或点击上传</div>
-            <div class="text-sm text-gray-400">支持 JPG、PNG、GIF 格式，单个文件不超过 10MB</div>
+            <div class="text-sm text-gray-400">支持 JPG、PNG、GIF、WebP 格式，单个文件不超过 10MB</div>
+            <div class="text-xs text-gray-400 mt-2">一次最多上传 20 个文件</div>
           </div>
         </el-upload>
 
-        <!-- 预览区域 -->
-        <div v-if="previewFile" class="mt-8">
+        <!-- 分类选择 -->
+        <div class="mt-8 mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">📂 选择分类</label>
+          <el-select v-model="selectedCategory" placeholder="请选择分类" class="w-full">
+            <el-option label="表情包" value="emoji" />
+            <el-option label="动漫" value="anime" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </div>
+
+        <!-- 多文件上传组件 -->
+        <MultiFileUpload
+          ref="multiFileUploadRef"
+          :selected-category="selectedCategory"
+          @all-completed="handleAllCompleted"
+        />
+
+        <!-- 单文件预览区域（保留兼容性） -->
+        <div v-if="previewFile && !hasMultipleFiles" class="mt-8">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">📷 图片预览</h3>
           <div class="bg-gray-50 rounded-xl p-4 mb-6">
             <img
@@ -35,17 +56,6 @@
               class="max-w-full max-h-64 mx-auto rounded-lg shadow-md"
             />
           </div>
-
-          <!-- 分类选择 -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">📂 选择分类</label>
-            <el-select v-model="selectedCategory" placeholder="请选择分类" class="w-full">
-              <el-option label="表情包" value="emoji" />
-              <el-option label="动漫" value="anime" />
-              <el-option label="其他" value="other" />
-            </el-select>
-          </div>
-
 
           <!-- 处理状态 -->
           <div v-if="processing" class="mb-6">
@@ -89,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled, Loading } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
@@ -97,12 +107,14 @@ import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
 import { OCRService } from '@/utils/ocr'
 import { AIVisionService } from '@/utils/ai'
+import MultiFileUpload from '@/components/MultiFileUpload.vue'
 import type { MemeData, CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
 const router = useRouter()
 
 const uploadRef = ref()
+const multiFileUploadRef = ref()
 const previewFile = ref<File | null>(null)
 const previewUrl = ref('')
 const selectedCategory = ref<CategoryType>('emoji')
@@ -111,30 +123,53 @@ const processingMessage = ref('')
 const processingProgress = ref(0)
 const ocrResult = ref('')
 const aiResult = ref('')
+const isDragOver = ref(false)
+const uploadedFiles = ref<File[]>([])
+
+const hasMultipleFiles = computed(() => uploadedFiles.value.length > 1)
 
 const beforeUpload = (file: File) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt10M = file.size / 1024 / 1024 < 10
-
-  if (!isImage) {
-    ElMessage.error('请上传图片文件!')
-    return false
-  }
-  if (!isLt10M) {
-    ElMessage.error('图片大小不能超过 10MB!')
+  const validation = ImageProcessor.validateImage(file)
+  if (!validation.valid) {
+    ElMessage.error(validation.error!)
     return false
   }
   return true
 }
 
-const handleFileChange = (file: any) => {
+const handleExceed = () => {
+  ElMessage.warning('最多只能上传 20 个文件!')
+}
+
+const handleDragOver = () => {
+  isDragOver.value = true
+}
+
+const handleDragLeave = () => {
+  isDragOver.value = false
+}
+
+const handleFileChange = (file: any, fileList: any[]) => {
   if (!beforeUpload(file.raw)) return
 
-  previewFile.value = file.raw
-  previewUrl.value = URL.createObjectURL(file.raw)
+  // 获取所有文件
+  const files = fileList.map(item => item.raw).filter(Boolean)
+  uploadedFiles.value = files
 
-  // 自动开始OCR和AI处理
-  processImage(file.raw)
+  if (files.length === 1) {
+    // 单文件模式
+    previewFile.value = files[0]
+    previewUrl.value = URL.createObjectURL(files[0])
+    processImage(files[0])
+  } else if (files.length > 1) {
+    // 多文件模式
+    previewFile.value = null
+    previewUrl.value = ''
+    // 添加文件到多文件上传组件
+    if (multiFileUploadRef.value) {
+      multiFileUploadRef.value.addFiles(files)
+    }
+  }
 }
 
 const processImage = async (file: File) => {
@@ -216,6 +251,14 @@ const handleUpload = async () => {
   }
 }
 
+const handleAllCompleted = () => {
+  ElMessage.success('所有文件处理完成！')
+  // 等待一段时间后自动跳转到首页
+  setTimeout(() => {
+    router.push('/')
+  }, 2000)
+}
+
 const resetForm = () => {
   // 清理图片URL资源
   if (previewUrl.value) {
@@ -230,7 +273,13 @@ const resetForm = () => {
   processing.value = false
   processingProgress.value = 0
   processingMessage.value = ''
+  uploadedFiles.value = []
   uploadRef.value?.clearFiles()
+
+  // 清理多文件上传组件
+  if (multiFileUploadRef.value) {
+    multiFileUploadRef.value.clearQueue()
+  }
 }
 </script>
 
@@ -245,11 +294,19 @@ const resetForm = () => {
   border: 2px dashed #d1d5db;
   border-radius: 12px;
   transition: all 0.3s ease;
+  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
 }
 
 .upload-area:hover {
   border-color: #667eea;
-  background-color: #f8faff;
+  background: linear-gradient(145deg, #f8faff, #eff6ff);
+  transform: translateY(-2px);
+}
+
+.upload-area.drag-over {
+  border-color: #10b981;
+  background: linear-gradient(145deg, #f0fdf4, #ecfdf5);
+  border-width: 3px;
 }
 
 :deep(.el-upload-dragger) {
