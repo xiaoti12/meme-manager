@@ -9,7 +9,7 @@ interface AIResult {
 }
 
 export class AIVisionService {
-  private static readonly HF_API_URL = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base'
+  private static readonly HF_API_URL = import.meta.env.VITE_HF_MODEL_URL || 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base'
   private static readonly HF_TOKEN = import.meta.env.VITE_HF_TOKEN
 
   /**

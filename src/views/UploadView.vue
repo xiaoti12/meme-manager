@@ -3,7 +3,12 @@
     <div class="max-w-2xl mx-auto">
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
         <div class="text-center mb-8">
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">📤 上传表情包</h2>
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex-1">
+              <h2 class="text-3xl font-bold text-gray-800 mb-4">📤 上传表情包</h2>
+            </div>
+            <ServiceStatus />
+          </div>
           <p class="text-gray-600">支持拖拽上传、粘贴上传，自动OCR识别文字，AI分析图片内容</p>
           <div class="text-sm text-blue-600 mt-2">
             💡 提示：按 Ctrl+V (或 Cmd+V) 可直接粘贴剪贴板中的图片
@@ -108,9 +113,9 @@ import { UploadFilled, Loading } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
-import { OCRService } from '@/utils/ocr'
-import { AIVisionService } from '@/utils/ai'
+import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
 import MultiFileUpload from '@/components/MultiFileUpload.vue'
+import ServiceStatus from '@/components/ServiceStatus.vue'
 import type { MemeData, CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
@@ -180,29 +185,44 @@ const processImage = async (file: File) => {
   processingProgress.value = 0
 
   try {
-    // 阶段1：图片预处理
-    processingMessage.value = '正在处理图片...'
-    processingProgress.value = 10
+    // 检查是否可以使用真实服务
+    const canUseReal = UploadService.canUseRealServices().overall
 
-    const imageInfo = await ImageProcessor.getImageInfo(file)
-    console.log('图片信息:', imageInfo)
+    // 显示服务状态
+    const serviceStatus = UploadService.getServiceStatus()
+    console.log('服务状态:', serviceStatus)
 
-    // 阶段2：OCR识别
-    processingMessage.value = '正在进行OCR文字识别...'
-    processingProgress.value = 30
+    const result = await UploadService.processFile(
+      file,
+      selectedCategory.value,
+      (progress: ProcessingProgress) => {
+        processingProgress.value = progress.progress
+        processingMessage.value = progress.message
 
-    const ocrResultData = await OCRService.mockRecognize(file) // 使用模拟版本
-    ocrResult.value = ocrResultData.success ? ocrResultData.text : '未能识别文字'
+        // 如果是单文件模式，实时更新OCR和AI结果
+        if (progress.stage === 'ocr' && progress.progress >= 70) {
+          // 这里可以获取中间结果，但UploadService没有直接提供
+          // 所以我们等待完成后再更新
+        }
+      },
+      canUseReal
+    )
 
-    // 阶段3：AI分析
-    processingMessage.value = '正在进行AI图片内容分析...'
-    processingProgress.value = 70
+    if (result.success && result.memeData) {
+      // 更新OCR和AI结果显示
+      ocrResult.value = result.memeData.ocrText
+      aiResult.value = result.memeData.aiDescription
 
-    const aiResultData = await AIVisionService.mockDescribe(file) // 使用模拟版本
-    aiResult.value = aiResultData.success ? aiResultData.description : '未能生成描述'
+      // 如果使用了Cloudinary，更新图片URL
+      if (result.memeData.cloudinaryId && previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+        previewUrl.value = result.memeData.imageUrl
+      }
 
-    processingProgress.value = 100
-    processingMessage.value = '处理完成!'
+      processingMessage.value = '处理完成!'
+    } else {
+      throw new Error(result.error || '处理失败')
+    }
 
   } catch (error) {
     console.error('图片处理错误:', error)
@@ -221,36 +241,45 @@ const handleUpload = async () => {
     return
   }
 
-  try {
-    processing.value = true
-    processingMessage.value = '正在保存...'
+  // 如果已经处理过了（有OCR和AI结果），直接保存
+  if (ocrResult.value || aiResult.value) {
+    try {
+      processing.value = true
+      processingMessage.value = '正在保存...'
 
-    // 创建表情包数据
-    const memeData: MemeData = {
-      id: Date.now().toString(),
-      filename: previewFile.value.name,
-      imageUrl: previewUrl.value, // 在实际应用中，这里应该是上传到云存储后的URL
-      category: selectedCategory.value,
-      ocrText: ocrResult.value,
-      aiDescription: aiResult.value,
-      uploadDate: new Date(),
-      fileSize: previewFile.value.size,
-      format: previewFile.value.type.split('/')[1]
-      // width 和 height 将在后续版本中添加
+      // 创建表情包数据
+      const memeData: MemeData = {
+        id: Date.now().toString(),
+        filename: previewFile.value.name,
+        imageUrl: previewUrl.value,
+        category: selectedCategory.value,
+        ocrText: ocrResult.value,
+        aiDescription: aiResult.value,
+        uploadDate: new Date(),
+        fileSize: previewFile.value.size,
+        format: previewFile.value.type.split('/')[1]
+      }
+
+      // 添加到store
+      memeStore.addMeme(memeData)
+
+      ElMessage.success('上传成功！')
+
+      // 跳转到首页
+      router.push('/')
+
+    } catch (error) {
+      ElMessage.error('上传失败，请重试')
+    } finally {
+      processing.value = false
     }
-
-    // 添加到store（addMeme方法已经包含了saveToStorage）
-    memeStore.addMeme(memeData)
-
-    ElMessage.success('上传成功！')
-
-    // 跳转到首页
-    router.push('/')
-
-  } catch (error) {
-    ElMessage.error('上传失败，请重试')
-  } finally {
-    processing.value = false
+  } else {
+    // 如果还没有处理，先处理再保存
+    await processImage(previewFile.value)
+    if (ocrResult.value || aiResult.value) {
+      // 处理完成后，再次调用保存逻辑
+      await handleUpload()
+    }
   }
 }
 

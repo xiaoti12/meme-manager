@@ -84,8 +84,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Clock, Check, Close, Delete } from '@element-plus/icons-vue'
 import { ImageProcessor } from '@/utils/image'
-import { OCRService } from '@/utils/ocr'
-import { AIVisionService } from '@/utils/ai'
+import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
 import { useMemeStore } from '@/stores/meme'
 import type { MemeData, CategoryType } from '@/types'
 
@@ -154,45 +153,47 @@ const processFile = async (fileItem: FileItem): Promise<void> => {
   fileItem.progress = 0
 
   try {
-    // 阶段1：图片预处理
-    fileItem.processingMessage = '正在处理图片...'
-    fileItem.progress = 10
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // 检查是否可以使用真实服务
+    const canUseReal = UploadService.canUseRealServices().overall
 
-    // 阶段2：OCR识别
-    fileItem.processingMessage = '正在进行OCR文字识别...'
-    fileItem.progress = 30
-    const ocrResult = await OCRService.mockRecognize(fileItem.file)
-    fileItem.ocrResult = ocrResult.success ? ocrResult.text : '未能识别文字'
-    fileItem.progress = 60
+    const result = await UploadService.processFile(
+      fileItem.file,
+      props.selectedCategory,
+      (progress: ProcessingProgress) => {
+        fileItem.progress = progress.progress
+        fileItem.processingMessage = progress.message
 
-    // 阶段3：AI分析
-    fileItem.processingMessage = '正在进行AI图片内容分析...'
-    fileItem.progress = 80
-    const aiResult = await AIVisionService.mockDescribe(fileItem.file)
-    fileItem.aiResult = aiResult.success ? aiResult.description : '未能生成描述'
+        // 更新OCR和AI结果（如果有的话）
+        if (progress.stage === 'ocr' && progress.progress >= 70) {
+          // OCR完成时的逻辑可以在这里处理
+        }
+        if (progress.stage === 'ai' && progress.progress >= 90) {
+          // AI分析完成时的逻辑可以在这里处理
+        }
+      },
+      canUseReal // 根据配置决定是否使用真实服务
+    )
 
-    // 阶段4：保存数据
-    fileItem.processingMessage = '正在保存...'
-    fileItem.progress = 90
+    if (result.success && result.memeData) {
+      // 更新文件项的结果显示
+      fileItem.ocrResult = result.memeData.ocrText
+      fileItem.aiResult = result.memeData.aiDescription
 
-    const memeData: MemeData = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      filename: fileItem.file.name,
-      imageUrl: fileItem.previewUrl,
-      category: props.selectedCategory,
-      ocrText: fileItem.ocrResult,
-      aiDescription: fileItem.aiResult,
-      uploadDate: new Date(),
-      fileSize: fileItem.file.size,
-      format: fileItem.file.type.split('/')[1]
+      // 如果使用了Cloudinary，更新图片URL
+      if (result.memeData.cloudinaryId) {
+        // 清理旧的预览URL
+        ImageProcessor.cleanupUrls([fileItem.previewUrl])
+        fileItem.previewUrl = result.memeData.imageUrl
+      }
+
+      // 保存到store
+      memeStore.addMeme(result.memeData)
+
+      fileItem.status = 'completed'
+      fileItem.processingMessage = '处理完成'
+    } else {
+      throw new Error(result.error || '处理失败')
     }
-
-    memeStore.addMeme(memeData)
-
-    fileItem.progress = 100
-    fileItem.status = 'completed'
-    fileItem.processingMessage = '处理完成'
 
   } catch (error) {
     fileItem.status = 'error'
