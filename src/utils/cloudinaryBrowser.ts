@@ -48,14 +48,26 @@ export class CloudinaryBrowserService {
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<CloudinaryUploadResult> {
+    console.log('🔵 [Cloudinary] 开始上传图片:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    })
+
     try {
       // 验证配置
       if (!this.validateConfig()) {
+        console.log('❌ [Cloudinary] 配置验证失败')
         return {
           success: false,
           error: 'Cloudinary配置不完整，请检查环境变量'
         }
       }
+
+      console.log('✅ [Cloudinary] 配置验证通过:', {
+        cloudName: this.config.cloudName,
+        uploadPreset: this.config.uploadPreset
+      })
 
       // 创建FormData
       const formData = new FormData()
@@ -67,6 +79,8 @@ export class CloudinaryBrowserService {
       formData.append('quality', 'auto')
       formData.append('fetch_format', 'auto')
 
+      console.log('📤 [Cloudinary] 发送上传请求到:', this.getUploadUrl())
+
       // 发送上传请求
       const response = await axios.post(this.getUploadUrl(), formData, {
         headers: {
@@ -75,14 +89,23 @@ export class CloudinaryBrowserService {
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            console.log(`📊 [Cloudinary] 上传进度: ${progress}%`)
             onProgress(progress)
           }
         },
         timeout: 30000
       })
 
+      console.log('✅ [Cloudinary] 上传成功:', {
+        publicId: response.data.public_id,
+        secureUrl: response.data.secure_url,
+        format: response.data.format,
+        bytes: response.data.bytes
+      })
+
       // 生成缩略图URL
       const thumbnailUrl = this.generateThumbnailUrl(response.data.public_id)
+      console.log('🖼️ [Cloudinary] 生成缩略图URL:', thumbnailUrl)
 
       return {
         success: true,

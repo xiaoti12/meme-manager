@@ -41,7 +41,7 @@ export const useMemeStore = defineStore('meme', () => {
       {
         id: '1',
         filename: '开心表情.png',
-        imageUrl: '/ai_docs/demo-index.html',
+        imageUrl: 'https://via.placeholder.com/300x300/FFE4B5/FF6B6B?text=😊',
         category: 'emoji',
         ocrText: '哈哈哈',
         aiDescription: '一个开心的表情',
@@ -51,7 +51,7 @@ export const useMemeStore = defineStore('meme', () => {
       {
         id: '2',
         filename: '动漫少女.png',
-        imageUrl: '/ai_docs/demo-index.html',
+        imageUrl: 'https://via.placeholder.com/300x300/E6E6FA/9370DB?text=🎀',
         category: 'anime',
         ocrText: '呀~',
         aiDescription: '可爱的动漫少女角色',
@@ -61,7 +61,7 @@ export const useMemeStore = defineStore('meme', () => {
       {
         id: '3',
         filename: '惊讶表情.jpg',
-        imageUrl: '/ai_docs/demo-index.html',
+        imageUrl: 'https://via.placeholder.com/300x300/F0F8FF/4682B4?text=😲',
         category: 'emoji',
         ocrText: '什么?!',
         aiDescription: '表示惊讶的面部表情',
@@ -71,7 +71,7 @@ export const useMemeStore = defineStore('meme', () => {
       {
         id: '4',
         filename: '猫耳萝莉.png',
-        imageUrl: '/ai_docs/demo-index.html',
+        imageUrl: 'https://via.placeholder.com/300x300/FFF8DC/FF69B4?text=😸',
         category: 'anime',
         ocrText: '喵~',
         aiDescription: '戴着猫耳的可爱女孩',
@@ -81,7 +81,7 @@ export const useMemeStore = defineStore('meme', () => {
       {
         id: '5',
         filename: '哭泣表情.gif',
-        imageUrl: '/ai_docs/demo-index.html',
+        imageUrl: 'https://via.placeholder.com/300x300/E0E0E0/696969?text=😢',
         category: 'emoji',
         ocrText: '呜呜呜',
         aiDescription: '伤心哭泣的表情',

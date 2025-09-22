@@ -2,8 +2,8 @@
   <div class="service-status">
     <el-tooltip content="点击查看服务配置详情" placement="top">
       <el-button
-        :type="isAllConfigured ? 'success' : 'warning'"
-        :icon="isAllConfigured ? SuccessFilled : WarningFilled"
+        :type="isAllConfigured ? 'success' : hasAnyConfigured ? 'primary' : 'warning'"
+        :icon="isAllConfigured ? SuccessFilled : hasAnyConfigured ? SuccessFilled : WarningFilled"
         size="small"
         @click="showDialog = true"
       >
@@ -106,9 +106,16 @@ const isAllConfigured = computed(() => {
          serviceStatus.value.huggingFace === '已配置'
 })
 
+const hasAnyConfigured = computed(() => {
+  return serviceStatus.value.cloudinary === '已配置' ||
+         serviceStatus.value.huggingFace === '已配置'
+})
+
 const statusText = computed(() => {
   if (isAllConfigured.value) {
     return '完整模式'
+  } else if (hasAnyConfigured.value) {
+    return '混合模式'
   } else {
     return '演示模式'
   }

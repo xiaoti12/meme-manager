@@ -7,7 +7,18 @@
             <div class="flex-1">
               <h2 class="text-3xl font-bold text-gray-800 mb-4">📤 上传表情包</h2>
             </div>
-            <ServiceStatus />
+            <div class="flex items-center space-x-2">
+              <ServiceStatus />
+              <!-- 开发模式调试按钮 -->
+              <div v-if="isDev" class="flex space-x-1">
+                <el-button size="small" type="info" @click="debugUpload">
+                  调试
+                </el-button>
+                <el-button size="small" type="danger" @click="clearData">
+                  清空数据
+                </el-button>
+              </div>
+            </div>
           </div>
           <p class="text-gray-600">支持拖拽上传、粘贴上传，自动OCR识别文字，AI分析图片内容</p>
           <div class="text-sm text-blue-600 mt-2">
@@ -114,6 +125,7 @@ import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
 import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
+import { DebugUpload } from '@/utils/debugUpload'
 import MultiFileUpload from '@/components/MultiFileUpload.vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 import type { MemeData, CategoryType } from '@/types'
@@ -135,6 +147,7 @@ const isDragOver = ref(false)
 const uploadedFiles = ref<File[]>([])
 
 const hasMultipleFiles = computed(() => uploadedFiles.value.length > 1)
+const isDev = computed(() => import.meta.env.DEV)
 
 const beforeUpload = (file: File) => {
   const validation = ImageProcessor.validateImage(file)
@@ -365,6 +378,18 @@ const resetForm = () => {
   if (multiFileUploadRef.value) {
     multiFileUploadRef.value.clearQueue()
   }
+}
+
+// 开发模式调试功能
+const debugUpload = () => {
+  DebugUpload.checkServiceStatus()
+}
+
+const clearData = () => {
+  DebugUpload.clearStorageData()
+  // 重新加载页面或清空store数据
+  memeStore.loadFromStorage()
+  ElMessage.success('数据已清空！')
 }
 </script>
 

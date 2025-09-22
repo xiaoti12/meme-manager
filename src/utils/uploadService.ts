@@ -36,6 +36,13 @@ export class UploadService {
     onProgress?: ProgressCallback,
     useRealServices: boolean = false
   ): Promise<UploadResult> {
+    console.log('🚀 [Upload] 开始处理文件:', {
+      fileName: file.name,
+      fileSize: file.size,
+      category,
+      useRealServices
+    })
+
     try {
       // 阶段1: 上传图片到Cloudinary
       onProgress?.({
@@ -47,7 +54,17 @@ export class UploadService {
       let imageUrl = ''
       let cloudinaryId = ''
 
-      if (useRealServices && CloudinaryBrowserService.validateConfig()) {
+      // 检查Cloudinary配置状态
+      const cloudinaryAvailable = CloudinaryBrowserService.validateConfig()
+      console.log('🔍 [Upload] 服务检查:', {
+        cloudinaryAvailable,
+        useRealServices,
+        willUseCloudinary: cloudinaryAvailable
+      })
+
+      // 只要Cloudinary配置了就使用，不依赖其他服务
+      if (cloudinaryAvailable) {
+        console.log('🔵 [Upload] 使用Cloudinary上传服务')
         // 使用真实的Cloudinary服务
         const uploadResult = await CloudinaryBrowserService.uploadImage(file, (progress) => {
           onProgress?.({
@@ -64,6 +81,7 @@ export class UploadService {
         imageUrl = uploadResult.url!
         cloudinaryId = uploadResult.publicId!
       } else {
+        console.log('🟡 [Upload] Cloudinary未配置，使用本地预览模式')
         // 使用本地预览（开发模式）
         imageUrl = URL.createObjectURL(file)
         // 模拟上传延迟
@@ -83,9 +101,8 @@ export class UploadService {
         message: '正在识别图片中的文字...'
       })
 
-      const ocrResult = useRealServices ?
-        await OCRService.recognizeText(file) :
-        await OCRService.mockRecognize(file)
+      // OCR服务总是可用的（Tesseract.js）
+      const ocrResult = await OCRService.recognizeText(file)
 
       onProgress?.({
         stage: 'ocr',
@@ -100,7 +117,11 @@ export class UploadService {
         message: '正在进行AI图片内容分析...'
       })
 
-      const aiResult = useRealServices ?
+      // AI服务：如果配置了HF_TOKEN就用真实服务，否则用模拟
+      const huggingFaceAvailable = !!(import.meta.env.VITE_HF_TOKEN)
+      console.log('🤖 [Upload] AI服务状态:', { huggingFaceAvailable })
+
+      const aiResult = huggingFaceAvailable ?
         await AIVisionService.describeImage(file) :
         await AIVisionService.mockDescribe(file)
 
@@ -207,7 +228,7 @@ export class UploadService {
     return {
       cloudinary,
       huggingFace,
-      overall: cloudinary && huggingFace
+      overall: cloudinary || huggingFace // 只要有一个配置了就不是纯演示模式
     }
   }
 
