@@ -163,12 +163,9 @@ const processFile = async (fileItem: FileItem): Promise<void> => {
         fileItem.progress = progress.progress
         fileItem.processingMessage = progress.message
 
-        // 更新OCR和AI结果（如果有的话）
-        if (progress.stage === 'ocr' && progress.progress >= 70) {
-          // OCR完成时的逻辑可以在这里处理
-        }
-        if (progress.stage === 'ai' && progress.progress >= 90) {
-          // AI分析完成时的逻辑可以在这里处理
+        // 更新LLM分析结果（如果有的话）
+        if (progress.stage === 'analyzing' && progress.progress >= 90) {
+          // LLM分析完成时的逻辑可以在这里处理
         }
       },
       canUseReal // 根据配置决定是否使用真实服务

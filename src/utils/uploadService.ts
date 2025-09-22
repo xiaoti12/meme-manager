@@ -1,10 +1,9 @@
 import { CloudinaryBrowserService } from './cloudinaryBrowser'
-import { OCRService } from './ocr'
-import { AIVisionService } from './ai'
+import { LLMVisionService, OCRService, AIVisionService } from './ocr'
 import type { MemeData, CategoryType } from '@/types'
 
 export interface ProcessingProgress {
-  stage: 'uploading' | 'ocr' | 'ai' | 'saving' | 'completed' | 'error'
+  stage: 'uploading' | 'analyzing' | 'saving' | 'completed' | 'error'
   progress: number
   message: string
 }
@@ -94,44 +93,24 @@ export class UploadService {
         message: '图片上传完成'
       })
 
-      // 阶段2: OCR文字识别
+      // 阶段2: LLM统一分析（OCR + AI描述）
       onProgress?.({
-        stage: 'ocr',
+        stage: 'analyzing',
         progress: 50,
-        message: '正在识别图片中的文字...'
+        message: '正在使用LLM分析图片内容...'
       })
 
-      // OCR服务总是可用的（Tesseract.js）
-      const ocrResult = await OCRService.recognizeText(file)
+      // 使用LLM统一分析服务，同时获得文字和描述
+      console.log('🤖 [Upload] 使用LLM统一识别服务')
+      const llmResult = await LLMVisionService.analyzeImage(file)
 
       onProgress?.({
-        stage: 'ocr',
-        progress: 70,
-        message: 'OCR识别完成'
-      })
-
-      // 阶段3: AI内容分析
-      onProgress?.({
-        stage: 'ai',
-        progress: 80,
-        message: '正在进行AI图片内容分析...'
-      })
-
-      // AI服务：如果配置了HF_TOKEN就用真实服务，否则用模拟
-      const huggingFaceAvailable = !!(import.meta.env.VITE_HF_TOKEN)
-      console.log('🤖 [Upload] AI服务状态:', { huggingFaceAvailable })
-
-      const aiResult = huggingFaceAvailable ?
-        await AIVisionService.describeImage(file) :
-        await AIVisionService.mockDescribe(file)
-
-      onProgress?.({
-        stage: 'ai',
+        stage: 'analyzing',
         progress: 90,
-        message: 'AI分析完成'
+        message: 'LLM分析完成'
       })
 
-      // 阶段4: 保存数据
+      // 阶段3: 保存数据
       onProgress?.({
         stage: 'saving',
         progress: 95,
@@ -143,8 +122,8 @@ export class UploadService {
         filename: file.name,
         imageUrl,
         category,
-        ocrText: ocrResult.text,
-        aiDescription: aiResult.description,
+        ocrText: llmResult.text,
+        aiDescription: llmResult.description,
         uploadDate: new Date(),
         fileSize: file.size,
         format: file.type.split('/')[1],
@@ -219,16 +198,16 @@ export class UploadService {
    */
   static canUseRealServices(): {
     cloudinary: boolean
-    huggingFace: boolean
+    llm: boolean
     overall: boolean
   } {
     const cloudinary = CloudinaryBrowserService.validateConfig()
-    const huggingFace = !!(import.meta.env.VITE_HF_TOKEN)
+    const llm = !!LLMVisionService.getConfig()
 
     return {
       cloudinary,
-      huggingFace,
-      overall: cloudinary || huggingFace // 只要有一个配置了就不是纯演示模式
+      llm,
+      overall: cloudinary || llm // 只要有一个配置了就不是纯演示模式
     }
   }
 
@@ -237,15 +216,13 @@ export class UploadService {
    */
   static getServiceStatus(): {
     cloudinary: string
-    huggingFace: string
-    ocr: string
+    llm: string
   } {
     const status = this.canUseRealServices()
 
     return {
       cloudinary: status.cloudinary ? '已配置' : '未配置（将使用本地预览）',
-      huggingFace: status.huggingFace ? '已配置' : '未配置（将使用模拟分析）',
-      ocr: 'Tesseract.js 已就绪'
+      llm: status.llm ? '已配置' : '未配置（将使用模拟分析）'
     }
   }
 }

@@ -67,7 +67,20 @@
         >
           搜索
         </router-link>
+        <el-button
+          type="info"
+          plain
+          @click="showConfigDialog = true"
+          class="px-4 py-2"
+        >
+          ⚙️ 配置
+        </el-button>
       </div>
+
+      <!-- LLM配置对话框 -->
+      <el-dialog v-model="showConfigDialog" title="LLM大模型配置" width="700px" destroy-on-close>
+        <LLMConfig @config-saved="handleConfigSaved" />
+      </el-dialog>
     </div>
   </header>
 </template>
@@ -75,13 +88,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
+import LLMConfig from './LLMConfig.vue'
 import type { CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
 
 const searchKeyword = ref('')
 const selectedCategory = ref<CategoryType>('all')
+const showConfigDialog = ref(false)
 
 const categories = [
   { value: 'all' as CategoryType, label: '全部' },
@@ -103,6 +119,11 @@ const handleCategoryChange = (category: CategoryType) => {
     keyword: searchKeyword.value,
     category: category
   })
+}
+
+const handleConfigSaved = () => {
+  showConfigDialog.value = false
+  ElMessage.success('配置已保存！')
 }
 
 watch([searchKeyword, selectedCategory], () => {

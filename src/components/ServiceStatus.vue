@@ -29,25 +29,15 @@
 
         <div class="service-item">
           <div class="flex items-center justify-between">
-            <span class="font-medium">AI图片分析 (Hugging Face)</span>
-            <el-tag :type="serviceStatus.huggingFace === '已配置' ? 'success' : 'warning'">
-              {{ serviceStatus.huggingFace }}
+            <span class="font-medium">LLM视觉识别 (统一服务)</span>
+            <el-tag :type="serviceStatus.llm === '已配置' ? 'success' : 'warning'">
+              {{ serviceStatus.llm }}
             </el-tag>
           </div>
           <p class="text-sm text-gray-600 mt-1">
-            {{ serviceStatus.huggingFace === '已配置' ?
-                '将使用真实的AI模型分析图片' :
-                '将使用模拟的AI分析结果' }}
-          </p>
-        </div>
-
-        <div class="service-item">
-          <div class="flex items-center justify-between">
-            <span class="font-medium">OCR文字识别 (Tesseract.js)</span>
-            <el-tag type="success">{{ serviceStatus.ocr }}</el-tag>
-          </div>
-          <p class="text-sm text-gray-600 mt-1">
-            本地OCR服务，无需配置，支持中英文识别
+            {{ serviceStatus.llm === '已配置' ?
+                '将使用真实的LLM模型同时进行OCR和图片分析' :
+                '将使用模拟的识别结果' }}
           </p>
         </div>
 
@@ -87,28 +77,28 @@ import { UploadService } from '@/utils/uploadService'
 const showDialog = ref(false)
 const serviceStatus = ref({
   cloudinary: '检查中...',
-  huggingFace: '检查中...',
-  ocr: '检查中...'
+  llm: '检查中...'
 })
 
 const configExample = `# Cloudinary配置（图片存储）
 VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
 VITE_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
 
-# Hugging Face配置（AI图片分析）
-VITE_HF_TOKEN=your_hugging_face_token
-VITE_HF_MODEL_URL=https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base
+# LLM配置（统一视觉识别）
+VITE_LLM_BASE_URL=https://api.openai.com
+VITE_LLM_MODEL=gpt-4-vision-preview
+VITE_LLM_TOKEN=your_llm_api_token
 
-# 注意：使用unsigned upload preset确保安全性`
+# 注意：支持OpenAI兼容的各种大模型API`
 
 const isAllConfigured = computed(() => {
   return serviceStatus.value.cloudinary === '已配置' &&
-         serviceStatus.value.huggingFace === '已配置'
+         serviceStatus.value.llm === '已配置'
 })
 
 const hasAnyConfigured = computed(() => {
   return serviceStatus.value.cloudinary === '已配置' ||
-         serviceStatus.value.huggingFace === '已配置'
+         serviceStatus.value.llm === '已配置'
 })
 
 const statusText = computed(() => {
