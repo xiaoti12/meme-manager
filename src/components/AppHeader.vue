@@ -1,5 +1,5 @@
 <template>
-  <header class="header glass-effect backdrop-blur-custom sticky top-0 z-50 card-shadow">
+  <header class="header glass-effect backdrop-blur-custom card-shadow">
     <div class="container mx-auto px-4 py-6">
       <div class="text-center mb-6">
         <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
@@ -67,20 +67,8 @@
         >
           搜索
         </router-link>
-        <el-button
-          type="info"
-          plain
-          @click="showConfigDialog = true"
-          class="px-4 py-2"
-        >
-          ⚙️ 配置
-        </el-button>
       </div>
 
-      <!-- LLM配置对话框 -->
-      <el-dialog v-model="showConfigDialog" title="LLM大模型配置" width="700px" destroy-on-close>
-        <LLMConfig @config-saved="handleConfigSaved" />
-      </el-dialog>
     </div>
   </header>
 </template>
@@ -88,16 +76,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
-import LLMConfig from './LLMConfig.vue'
 import type { CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
 
 const searchKeyword = ref('')
 const selectedCategory = ref<CategoryType>('all')
-const showConfigDialog = ref(false)
 
 const categories = [
   { value: 'all' as CategoryType, label: '全部' },
@@ -121,10 +106,6 @@ const handleCategoryChange = (category: CategoryType) => {
   })
 }
 
-const handleConfigSaved = () => {
-  showConfigDialog.value = false
-  ElMessage.success('配置已保存！')
-}
 
 watch([searchKeyword, selectedCategory], () => {
   handleSearch()

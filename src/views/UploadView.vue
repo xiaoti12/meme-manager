@@ -9,6 +9,14 @@
             </div>
             <div class="flex items-center space-x-2">
               <ServiceStatus />
+              <el-button
+                type="info"
+                plain
+                size="small"
+                @click="showConfigDialog = true"
+              >
+                ⚙️ LLM配置
+              </el-button>
               <!-- 开发模式调试按钮 -->
               <div v-if="isDev" class="flex space-x-1">
                 <el-button size="small" type="info" @click="debugUpload">
@@ -114,6 +122,11 @@
         </div>
       </div>
     </div>
+
+    <!-- LLM配置对话框 -->
+    <el-dialog v-model="showConfigDialog" title="LLM大模型配置" width="700px" destroy-on-close>
+      <LLMConfig @config-saved="handleConfigSaved" />
+    </el-dialog>
   </div>
 </template>
 
@@ -128,6 +141,7 @@ import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
 import { DebugUpload } from '@/utils/debugUpload'
 import MultiFileUpload from '@/components/MultiFileUpload.vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
+import LLMConfig from '@/components/LLMConfig.vue'
 import type { MemeData, CategoryType } from '@/types'
 
 const memeStore = useMemeStore()
@@ -145,6 +159,7 @@ const ocrResult = ref('')
 const aiResult = ref('')
 const isDragOver = ref(false)
 const uploadedFiles = ref<File[]>([])
+const showConfigDialog = ref(false)
 
 const hasMultipleFiles = computed(() => uploadedFiles.value.length > 1)
 const isDev = computed(() => import.meta.env.DEV)
@@ -390,6 +405,11 @@ const clearData = () => {
   // 重新加载页面或清空store数据
   memeStore.loadFromStorage()
   ElMessage.success('数据已清空！')
+}
+
+const handleConfigSaved = () => {
+  showConfigDialog.value = false
+  ElMessage.success('配置已保存！')
 }
 </script>
 
