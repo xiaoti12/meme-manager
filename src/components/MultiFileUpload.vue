@@ -1,5 +1,5 @@
 <template>
-  <div class="multi-file-upload">
+  <div class="multi-file-upload" @paste="handlePaste" tabindex="0">
     <!-- 文件队列显示 -->
     <div v-if="fileQueue.length > 0" class="file-queue mb-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">📂 待处理文件 ({{ fileQueue.length }})</h3>
@@ -224,6 +224,47 @@ const startBatchProcessing = async () => {
   }
 }
 
+const handlePaste = async (event: ClipboardEvent) => {
+  if (!event.clipboardData) return
+
+  const items = Array.from(event.clipboardData.items)
+  const imageItems = items.filter(item => item.type.startsWith('image/'))
+
+  if (imageItems.length === 0) {
+    return
+  }
+
+  event.preventDefault()
+
+  try {
+    const files: File[] = []
+
+    for (const item of imageItems) {
+      const file = item.getAsFile()
+      if (file) {
+        const validation = ImageProcessor.validateImage(file)
+        if (!validation.valid) {
+          ElMessage.error(`粘贴的图片无效: ${validation.error}`)
+          continue
+        }
+        files.push(file)
+      }
+    }
+
+    if (files.length === 0) {
+      ElMessage.error('没有有效的图片可以粘贴到队列')
+      return
+    }
+
+    addFiles(files)
+    ElMessage.success(`成功粘贴 ${files.length} 张图片到处理队列！`)
+
+  } catch (error) {
+    console.error('粘贴图片失败:', error)
+    ElMessage.error('粘贴图片失败，请重试')
+  }
+}
+
 // 暴露方法给父组件
 defineExpose({
   addFiles,
@@ -239,5 +280,9 @@ defineExpose({
 .file-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.multi-file-upload:focus {
+  outline: none;
 }
 </style>

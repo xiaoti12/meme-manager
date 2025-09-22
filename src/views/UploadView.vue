@@ -1,10 +1,13 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8" @paste="handlePaste">
     <div class="max-w-2xl mx-auto">
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
         <div class="text-center mb-8">
           <h2 class="text-3xl font-bold text-gray-800 mb-4">📤 上传表情包</h2>
-          <p class="text-gray-600">支持拖拽上传，自动OCR识别文字，AI分析图片内容</p>
+          <p class="text-gray-600">支持拖拽上传、粘贴上传，自动OCR识别文字，AI分析图片内容</p>
+          <div class="text-sm text-blue-600 mt-2">
+            💡 提示：按 Ctrl+V (或 Cmd+V) 可直接粘贴剪贴板中的图片
+          </div>
         </div>
 
         <!-- 文件上传区域 -->
@@ -257,6 +260,59 @@ const handleAllCompleted = () => {
   setTimeout(() => {
     router.push('/')
   }, 2000)
+}
+
+const handlePaste = async (event: ClipboardEvent) => {
+  if (!event.clipboardData) return
+
+  const items = Array.from(event.clipboardData.items)
+  const imageItems = items.filter(item => item.type.startsWith('image/'))
+
+  if (imageItems.length === 0) {
+    return
+  }
+
+  event.preventDefault()
+
+  try {
+    const files: File[] = []
+
+    for (const item of imageItems) {
+      const file = item.getAsFile()
+      if (file) {
+        const validation = ImageProcessor.validateImage(file)
+        if (!validation.valid) {
+          ElMessage.error(`粘贴的图片无效: ${validation.error}`)
+          continue
+        }
+        files.push(file)
+      }
+    }
+
+    if (files.length === 0) {
+      ElMessage.error('没有有效的图片可以粘贴')
+      return
+    }
+
+    uploadedFiles.value = [...uploadedFiles.value, ...files]
+
+    if (files.length === 1 && uploadedFiles.value.length === 1) {
+      previewFile.value = files[0]
+      previewUrl.value = URL.createObjectURL(files[0])
+      processImage(files[0])
+      ElMessage.success('图片粘贴成功！')
+    } else {
+      previewFile.value = null
+      previewUrl.value = ''
+      if (multiFileUploadRef.value) {
+        multiFileUploadRef.value.addFiles(files)
+      }
+      ElMessage.success(`成功粘贴 ${files.length} 张图片！`)
+    }
+  } catch (error) {
+    console.error('粘贴图片失败:', error)
+    ElMessage.error('粘贴图片失败，请重试')
+  }
 }
 
 const resetForm = () => {
