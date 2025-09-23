@@ -68,9 +68,7 @@ const showGallery = ref(false)
 const galleryIndex = ref(0)
 
 const categoryStyles = {
-  emoji: 'bg-gradient-to-r from-yellow-200 to-orange-200',
-  anime: 'bg-gradient-to-r from-pink-200 to-purple-200',
-  other: 'bg-gradient-to-r from-blue-200 to-indigo-200',
+  default: 'bg-gradient-to-r from-blue-200 to-indigo-200',
   all: 'bg-gradient-to-r from-gray-200 to-gray-300'
 }
 

@@ -19,7 +19,7 @@ export interface SearchFilters {
   keyword: string
 }
 
-export type CategoryType = 'all' | 'emoji' | 'anime' | 'other'
+export type CategoryType = 'all' | 'default'
 
 export type SortType = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 
@@ -34,9 +34,7 @@ export interface UploadProgress {
 export interface MemeStatistics {
   total: number
   byCategory: {
-    emoji: number
-    anime: number
-    other: number
+    default: number
   }
   totalSize: number
   averageSize: number

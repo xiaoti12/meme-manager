@@ -63,7 +63,7 @@ export class DebugUpload {
       console.log('\n开始处理文件...')
       const result = await UploadService.processFile(
         file,
-        'other',
+        'default',
         (progress) => {
           console.log(`进度: ${progress.stage} - ${progress.progress}% - ${progress.message}`)
         },

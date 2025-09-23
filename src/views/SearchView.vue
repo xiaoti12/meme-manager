@@ -30,9 +30,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">📂 分类筛选</label>
             <el-select v-model="searchForm.category" placeholder="选择分类" class="w-full" size="large" @change="handleSearch">
               <el-option label="全部分类" value="all" />
-              <el-option label="表情包" value="emoji" />
-              <el-option label="动漫" value="anime" />
-              <el-option label="其他" value="other" />
+              <el-option label="默认" value="default" />
             </el-select>
           </div>
 
@@ -343,9 +341,7 @@ const showStatistics = () => {
   ElMessageBox.alert(
     `
     总数量: ${stats.total} 个表情包
-    表情包: ${stats.byCategory.emoji} 个
-    动漫: ${stats.byCategory.anime} 个
-    其他: ${stats.byCategory.other} 个
+    默认: ${stats.byCategory.default} 个
     总大小: ${formatFileSize(stats.totalSize)}
     平均大小: ${formatFileSize(stats.averageSize)}
     `,
@@ -387,9 +383,7 @@ const handleDelete = async (meme: MemeData) => {
 // 工具函数
 const getCategoryType = (category: CategoryType) => {
   const typeMap = {
-    emoji: 'warning',
-    anime: 'success',
-    other: 'info',
+    default: 'primary',
     all: 'info'
   }
   return typeMap[category] || 'info'
@@ -397,9 +391,7 @@ const getCategoryType = (category: CategoryType) => {
 
 const getCategoryLabel = (category: CategoryType) => {
   const labelMap = {
-    emoji: '表情包',
-    anime: '动漫',
-    other: '其他',
+    default: '默认',
     all: '全部'
   }
   return labelMap[category] || '未知'

@@ -211,9 +211,7 @@ const toggleInfo = () => {
 
 const getCategoryName = (category: string) => {
   const categoryMap: Record<string, string> = {
-    emoji: '表情',
-    anime: '动漫',
-    other: '其他'
+    default: '默认'
   }
   return categoryMap[category] || category
 }

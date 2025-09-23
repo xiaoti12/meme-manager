@@ -2,31 +2,13 @@
   <div class="container mx-auto px-4 py-8">
     <!-- 表情包分类展示 -->
     <div v-if="memeStore.filteredMemes.length > 0" class="space-y-12">
-      <!-- 表情包分类 -->
+      <!-- 默认分类 -->
       <CategorySection
-        v-if="memeStore.memesByCategory.emoji.length > 0"
-        title="表情包"
-        icon="😀"
-        :memes="memeStore.memesByCategory.emoji"
-        category="emoji"
-      />
-
-      <!-- 动漫分类 -->
-      <CategorySection
-        v-if="memeStore.memesByCategory.anime.length > 0"
-        title="动漫"
-        icon="🎨"
-        :memes="memeStore.memesByCategory.anime"
-        category="anime"
-      />
-
-      <!-- 其他分类 -->
-      <CategorySection
-        v-if="memeStore.memesByCategory.other.length > 0"
-        title="其他"
+        v-if="memeStore.memesByCategory.default.length > 0"
+        title="默认"
         icon="📂"
-        :memes="memeStore.memesByCategory.other"
-        category="other"
+        :memes="memeStore.memesByCategory.default"
+        category="default"
       />
     </div>
 
@@ -49,18 +31,14 @@
       <div class="text-center mb-6">
         <h3 class="text-xl font-semibold text-gray-700 mb-4">📈 数据统计</h3>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
         <div class="text-center p-4 bg-white rounded-lg">
           <div class="text-2xl font-bold text-primary-600">{{ stats.total }}</div>
           <div class="text-sm text-gray-500">总数量</div>
         </div>
         <div class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-orange-600">{{ stats.byCategory.emoji }}</div>
-          <div class="text-sm text-gray-500">表情包</div>
-        </div>
-        <div class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-pink-600">{{ stats.byCategory.anime }}</div>
-          <div class="text-sm text-gray-500">动漫</div>
+          <div class="text-2xl font-bold text-blue-600">{{ stats.byCategory.default }}</div>
+          <div class="text-sm text-gray-500">默认</div>
         </div>
         <div class="text-center p-4 bg-white rounded-lg">
           <div class="text-2xl font-bold text-gray-600">{{ formatFileSize(stats.totalSize) }}</div>

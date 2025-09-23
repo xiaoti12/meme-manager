@@ -60,9 +60,7 @@
         <div class="mt-8 mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">📂 选择分类</label>
           <el-select v-model="selectedCategory" placeholder="请选择分类" class="w-full">
-            <el-option label="表情包" value="emoji" />
-            <el-option label="动漫" value="anime" />
-            <el-option label="其他" value="other" />
+            <el-option label="默认" value="default" />
           </el-select>
         </div>
 
@@ -151,7 +149,7 @@ const uploadRef = ref()
 const multiFileUploadRef = ref()
 const previewFile = ref<File | null>(null)
 const previewUrl = ref('')
-const selectedCategory = ref<CategoryType>('emoji')
+const selectedCategory = ref<CategoryType>('default')
 const processing = ref(false)
 const processingMessage = ref('')
 const processingProgress = ref(0)
@@ -380,7 +378,7 @@ const resetForm = () => {
 
   previewFile.value = null
   previewUrl.value = ''
-  selectedCategory.value = 'emoji'
+  selectedCategory.value = 'default'
   ocrResult.value = ''
   aiResult.value = ''
   processing.value = false

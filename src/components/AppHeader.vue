@@ -40,9 +40,7 @@
       <!-- 统计信息 -->
       <div class="flex justify-center items-center gap-6 mt-4 text-sm text-gray-600">
         <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
-        <span>表情包: {{ memeStore.getStatistics.byCategory.emoji }}</span>
-        <span>动漫: {{ memeStore.getStatistics.byCategory.anime }}</span>
-        <span>其他: {{ memeStore.getStatistics.byCategory.other }}</span>
+        <span>默认: {{ memeStore.getStatistics.byCategory.default }}</span>
       </div>
 
       <div class="flex justify-center gap-4 mt-4">
@@ -86,9 +84,7 @@ const selectedCategory = ref<CategoryType>('all')
 
 const categories = [
   { value: 'all' as CategoryType, label: '全部' },
-  { value: 'emoji' as CategoryType, label: '表情包' },
-  { value: 'anime' as CategoryType, label: '动漫' },
-  { value: 'other' as CategoryType, label: '其他' }
+  { value: 'default' as CategoryType, label: '默认' }
 ]
 
 const handleSearch = () => {

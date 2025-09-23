@@ -42,7 +42,7 @@ export const useMemeStore = defineStore('meme', () => {
         id: '1',
         filename: '开心表情.png',
         imageUrl: 'https://via.placeholder.com/300x300/FFE4B5/FF6B6B?text=😊',
-        category: 'emoji',
+        category: 'default',
         ocrText: '哈哈哈',
         aiDescription: '一个开心的表情',
         uploadDate: new Date(Date.now() - 86400000), // 1天前
@@ -52,7 +52,7 @@ export const useMemeStore = defineStore('meme', () => {
         id: '2',
         filename: '动漫少女.png',
         imageUrl: 'https://via.placeholder.com/300x300/E6E6FA/9370DB?text=🎀',
-        category: 'anime',
+        category: 'default',
         ocrText: '呀~',
         aiDescription: '可爱的动漫少女角色',
         uploadDate: new Date(Date.now() - 172800000), // 2天前
@@ -62,7 +62,7 @@ export const useMemeStore = defineStore('meme', () => {
         id: '3',
         filename: '惊讶表情.jpg',
         imageUrl: 'https://via.placeholder.com/300x300/F0F8FF/4682B4?text=😲',
-        category: 'emoji',
+        category: 'default',
         ocrText: '什么?!',
         aiDescription: '表示惊讶的面部表情',
         uploadDate: new Date(Date.now() - 259200000), // 3天前
@@ -72,7 +72,7 @@ export const useMemeStore = defineStore('meme', () => {
         id: '4',
         filename: '猫耳萝莉.png',
         imageUrl: 'https://via.placeholder.com/300x300/FFF8DC/FF69B4?text=😸',
-        category: 'anime',
+        category: 'default',
         ocrText: '喵~',
         aiDescription: '戴着猫耳的可爱女孩',
         uploadDate: new Date(Date.now() - 345600000), // 4天前
@@ -82,7 +82,7 @@ export const useMemeStore = defineStore('meme', () => {
         id: '5',
         filename: '哭泣表情.gif',
         imageUrl: 'https://via.placeholder.com/300x300/E0E0E0/696969?text=😢',
-        category: 'emoji',
+        category: 'default',
         ocrText: '呜呜呜',
         aiDescription: '伤心哭泣的表情',
         uploadDate: new Date(Date.now() - 432000000), // 5天前
@@ -141,16 +141,14 @@ export const useMemeStore = defineStore('meme', () => {
   // 按分类分组的表情包
   const memesByCategory = computed(() => {
     const grouped = {
-      emoji: [] as MemeData[],
-      anime: [] as MemeData[],
-      other: [] as MemeData[]
+      default: [] as MemeData[]
     }
 
     filteredMemes.value.forEach(meme => {
       if (meme.category in grouped) {
         grouped[meme.category as keyof typeof grouped].push(meme)
       } else {
-        grouped.other.push(meme)
+        grouped.default.push(meme)
       }
     })
 
@@ -329,9 +327,7 @@ export const useMemeStore = defineStore('meme', () => {
     const stats = {
       total: memes.value.length,
       byCategory: {
-        emoji: 0,
-        anime: 0,
-        other: 0
+        default: 0
       },
       totalSize: 0,
       averageSize: 0,
@@ -344,7 +340,7 @@ export const useMemeStore = defineStore('meme', () => {
       if (meme.category in stats.byCategory) {
         stats.byCategory[meme.category as keyof typeof stats.byCategory]++
       } else {
-        stats.byCategory.other++
+        stats.byCategory.default++
       }
 
       // 大小统计

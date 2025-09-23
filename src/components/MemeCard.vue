@@ -116,18 +116,14 @@ const imageLoaded = ref(false)
 
 const categoryTagType = computed(() => {
   switch (props.meme.category) {
-    case 'emoji': return 'warning'
-    case 'anime': return 'danger'
-    case 'other': return 'info'
+    case 'default': return 'primary'
     default: return 'primary'
   }
 })
 
 const getCategoryName = (category: string) => {
   const categoryMap: Record<string, string> = {
-    emoji: '表情',
-    anime: '动漫',
-    other: '其他'
+    default: '默认'
   }
   return categoryMap[category] || category
 }
