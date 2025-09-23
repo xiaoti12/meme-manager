@@ -109,6 +109,7 @@
 import { ref, computed } from 'vue'
 import type { MemeData } from '@/types'
 import { Picture, Download, CopyDocument, Delete, Loading, Check } from '@element-plus/icons-vue'
+import { CategoryManager } from '@/utils/categoryManager'
 
 interface Props {
   meme: MemeData
@@ -149,10 +150,8 @@ const categoryTagType = computed(() => {
 })
 
 const getCategoryName = (category: string) => {
-  const categoryMap: Record<string, string> = {
-    default: '默认'
-  }
-  return categoryMap[category] || category
+  const categoryData = CategoryManager.getCategoryById(category)
+  return categoryData ? categoryData.name : category
 }
 
 const handleImageError = () => {
