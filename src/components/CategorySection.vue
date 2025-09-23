@@ -60,6 +60,7 @@ import MemeCard from './MemeCard.vue'
 import MemeGallery from './MemeGallery.vue'
 import { ElMessage } from 'element-plus'
 import { FullScreen } from '@element-plus/icons-vue'
+import { copyImageToClipboard } from '@/utils/clipboard'
 
 interface Props {
   title: string
@@ -101,9 +102,23 @@ const handleDownload = (meme: MemeData) => {
   ElMessage.success(`开始下载: ${meme.filename}`)
 }
 
-const handleCopy = (meme: MemeData) => {
-  // 模拟复制到剪贴板
-  ElMessage.success(`${meme.filename} 已复制到剪贴板`)
+const handleCopy = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法复制')
+    return
+  }
+
+  try {
+    const success = await copyImageToClipboard(meme.imageUrl, meme.filename)
+    if (success) {
+      ElMessage.success(`${meme.filename} 已复制到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('复制图片失败:', error)
+    ElMessage.error('复制失败，浏览器可能不支持此功能')
+  }
 }
 
 const handleDelete = (meme: MemeData) => {

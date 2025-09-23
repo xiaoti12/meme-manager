@@ -198,6 +198,7 @@ import SelectionManager from '@/components/SelectionManager.vue'
 import type { MemeData, CategoryType } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
 import { useRoute } from 'vue-router'
+import { copyImageToClipboard } from '@/utils/clipboard'
 
 const memeStore = useMemeStore()
 
@@ -319,8 +320,23 @@ const handleDownload = (meme: MemeData) => {
   ElMessage.success(`开始下载: ${meme.filename}`)
 }
 
-const handleCopy = (meme: MemeData) => {
-  ElMessage.success(`${meme.filename} 已复制到剪贴板`)
+const handleCopy = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法复制')
+    return
+  }
+
+  try {
+    const success = await copyImageToClipboard(meme.imageUrl, meme.filename)
+    if (success) {
+      ElMessage.success(`${meme.filename} 已复制到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('复制图片失败:', error)
+    ElMessage.error('复制失败，浏览器可能不支持此功能')
+  }
 }
 
 const handleDelete = async (meme: MemeData) => {
