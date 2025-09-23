@@ -270,6 +270,7 @@ export const useMemeStore = defineStore('meme', () => {
     return memes.value.find(meme => meme.id === id)
   }
 
+
   // 保存到本地存储（带错误处理）
   const saveToStorage = () => {
     try {
@@ -296,8 +297,6 @@ export const useMemeStore = defineStore('meme', () => {
             ...meme,
             uploadDate: new Date(meme.uploadDate)
           }))
-      } else {
-        initMockData()
       }
 
       if (settings) {
@@ -309,7 +308,6 @@ export const useMemeStore = defineStore('meme', () => {
       updateFuseInstance()
     } catch (error) {
       console.error('加载数据失败:', error)
-      initMockData()
     }
   }
 
