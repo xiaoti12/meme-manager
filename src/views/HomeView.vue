@@ -38,27 +38,6 @@
       </div>
     </div>
 
-    <!-- 数据统计 -->
-    <div v-if="!isLoading && memeStore.memes.length > 0"
-      class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mt-12">
-      <div class="text-center mb-6">
-        <h3 class="text-xl font-semibold text-gray-700 mb-4">📈 数据统计</h3>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-        <div class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-primary-600">{{ stats.total }}</div>
-          <div class="text-sm text-gray-500">总数量</div>
-        </div>
-        <div v-for="categoryItem in statsCategories" :key="categoryItem.id" class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-blue-600">{{ stats.byCategory[categoryItem.id] }}</div>
-          <div class="text-sm text-gray-500">{{ categoryItem.icon }} {{ categoryItem.name }}</div>
-        </div>
-        <div class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-gray-600">{{ formatFileSize(stats.totalSize) }}</div>
-          <div class="text-sm text-gray-500">总大小</div>
-        </div>
-      </div>
-    </div>
 
     <!-- 上传提示 -->
     <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mt-12">
@@ -159,23 +138,6 @@ const categoriesToDisplay = computed(() => {
   )
 })
 
-// 统计数据
-const stats = computed(() => memeStore.getStatistics)
-
-// 创建一个计算属性，预先过滤出需要在统计中显示的分类
-const statsCategories = computed(() => {
-  if (!stats.value) return []
-  return validCategories.value.filter(
-    category => stats.value.byCategory[category.id] > 0
-  )
-})
-
-// 工具函数
-const formatFileSize = (size: number) => {
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
 
 // 导出所有数据
 const exportAllData = () => {
