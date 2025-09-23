@@ -208,7 +208,7 @@ export const useMemeStore = defineStore('meme', () => {
 
   // 批量删除表情包
   const removeMemes = (ids: string[]) => {
-    memes.value = memes.value.filter(meme => !ids.includes(meme.id))
+    memes.value = memes.value.filter(meme => meme && !ids.includes(meme.id))
     updateFuseInstance()
     saveToStorage()
   }
@@ -290,10 +290,12 @@ export const useMemeStore = defineStore('meme', () => {
       if (stored) {
         const parsedData = JSON.parse(stored)
         // 数据验证和迁移
-        memes.value = parsedData.map((meme: any) => ({
-          ...meme,
-          uploadDate: new Date(meme.uploadDate)
-        }))
+        memes.value = parsedData
+          .filter((meme: any) => meme && meme.id)
+          .map((meme: any) => ({
+            ...meme,
+            uploadDate: new Date(meme.uploadDate)
+          }))
       } else {
         initMockData()
       }
@@ -333,10 +335,12 @@ export const useMemeStore = defineStore('meme', () => {
   const importData = (data: any) => {
     try {
       if (data.memes && Array.isArray(data.memes)) {
-        memes.value = data.memes.map((meme: any) => ({
-          ...meme,
-          uploadDate: new Date(meme.uploadDate)
-        }))
+        memes.value = data.memes
+          .filter((meme: any) => meme && meme.id)
+          .map((meme: any) => ({
+            ...meme,
+            uploadDate: new Date(meme.uploadDate)
+          }))
         updateFuseInstance()
         saveToStorage()
         return true

@@ -141,10 +141,18 @@ export class CategoryManager {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
-        this.categories = parsed.map((cat: any) => ({
-          ...cat,
-          createdAt: new Date(cat.createdAt)
-        }))
+
+        // 验证并过滤有效的分类数据
+        const validCategories = parsed
+          .filter((cat: any) => cat && cat.id && cat.name && typeof cat.id === 'string' && typeof cat.name === 'string')
+          .map((cat: any) => ({
+            ...cat,
+            createdAt: new Date(cat.createdAt),
+            color: cat.color || '#64748b',
+            icon: cat.icon || '📂'
+          }))
+
+        this.categories = validCategories
 
         // 确保默认分类存在
         if (!this.categories.some(cat => cat.id === 'default')) {

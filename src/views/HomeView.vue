@@ -1,17 +1,19 @@
 <template>
   <div class="container mx-auto px-4 py-8">
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="text-center py-16">
+      <div class="glass-effect backdrop-blur-custom rounded-3xl p-12 card-shadow max-w-md mx-auto">
+        <div class="text-4xl mb-4">⏳</div>
+        <h3 class="text-xl font-semibold text-gray-700">加载中...</h3>
+      </div>
+    </div>
+
     <!-- 表情包分类展示 -->
-    <div v-if="memeStore.filteredMemes.length > 0" class="space-y-12">
+    <div v-else-if="!isLoading && memeStore.filteredMemes.length > 0 && validCategories.length > 0" class="space-y-12">
       <!-- 动态分类 -->
-      <CategorySection
-        v-for="categoryItem in categoryList"
-        :key="categoryItem.id"
-        v-if="memeStore.memesByCategory[categoryItem.id]?.length > 0"
-        :title="categoryItem.name"
-        :icon="categoryItem.icon || '📂'"
-        :memes="memeStore.memesByCategory[categoryItem.id]"
-        :category="categoryItem.id"
-      />
+      <CategorySection v-for="categoryItem in categoriesToDisplay" :key="categoryItem.id" :title="categoryItem.name"
+        :icon="categoryItem.icon || '📂'" :memes="memeStore.memesByCategory[categoryItem.id]"
+        :category="categoryItem.id" />
     </div>
 
     <!-- 空状态 -->
@@ -29,7 +31,8 @@
     </div>
 
     <!-- 数据统计 -->
-    <div v-if="memeStore.memes.length > 0" class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mt-12">
+    <div v-if="!isLoading && memeStore.memes.length > 0"
+      class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mt-12">
       <div class="text-center mb-6">
         <h3 class="text-xl font-semibold text-gray-700 mb-4">📈 数据统计</h3>
       </div>
@@ -38,12 +41,7 @@
           <div class="text-2xl font-bold text-primary-600">{{ stats.total }}</div>
           <div class="text-sm text-gray-500">总数量</div>
         </div>
-        <div
-          v-for="categoryItem in categoryList"
-          :key="categoryItem.id"
-          v-if="stats.byCategory[categoryItem.id] > 0"
-          class="text-center p-4 bg-white rounded-lg"
-        >
+        <div v-for="categoryItem in statsCategories" :key="categoryItem.id" class="text-center p-4 bg-white rounded-lg">
           <div class="text-2xl font-bold text-blue-600">{{ stats.byCategory[categoryItem.id] }}</div>
           <div class="text-sm text-gray-500">{{ categoryItem.icon }} {{ categoryItem.name }}</div>
         </div>
@@ -85,15 +83,70 @@ import CategorySection from '@/components/CategorySection.vue'
 import { CategoryManager, type Category } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
+
+// 初始化为空数组，避免undefined问题
 const categoryList = ref<Category[]>([])
+const isLoading = ref(true)
+
+// 立即加载分类列表
+const loadCategories = async () => {
+  try {
+    const categories = CategoryManager.getCategories()
+    categoryList.value = categories.filter(cat =>
+      cat &&
+      cat.id &&
+      cat.name &&
+      typeof cat.id === 'string' &&
+      typeof cat.name === 'string'
+    )
+  } catch (error) {
+    console.error('加载分类失败:', error)
+    categoryList.value = [{
+      id: 'default',
+      name: '默认',
+      createdAt: new Date(),
+      color: '#64748b',
+      icon: '📂'
+    }]
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 在定义时立即执行
+loadCategories()
+
+// 过滤有效的分类项（现在categoryList已经过滤过了，但保留作为双重保险）
+const validCategories = computed(() => {
+  if (isLoading.value || !Array.isArray(categoryList.value)) {
+    return []
+  }
+  return categoryList.value.filter(item =>
+    item &&
+    item.id &&
+    item.name &&
+    typeof item.id === 'string' &&
+    typeof item.name === 'string'
+  )
+})
+
+// 创建一个计算属性，预先过滤出需要显示的分类
+const categoriesToDisplay = computed(() => {
+  return validCategories.value.filter(
+    category => memeStore.memesByCategory[category.id]?.length > 0
+  )
+})
 
 // 统计数据
 const stats = computed(() => memeStore.getStatistics)
 
-// 加载分类列表
-const loadCategories = () => {
-  categoryList.value = CategoryManager.getCategories()
-}
+// 创建一个计算属性，预先过滤出需要在统计中显示的分类
+const statsCategories = computed(() => {
+  if (!stats.value) return []
+  return validCategories.value.filter(
+    category => stats.value.byCategory[category.id] > 0
+  )
+})
 
 // 工具函数
 const formatFileSize = (size: number) => {
@@ -144,9 +197,11 @@ const importData = () => {
   input.click()
 }
 
-// 组件挂载时加载分类
-onMounted(() => {
-  loadCategories()
+// 组件挂载时再次确保分类已加载（防止异步问题）
+onMounted(async () => {
+  if (categoryList.value.length === 0 || isLoading.value) {
+    await loadCategories()
+  }
 })
 </script>
 
