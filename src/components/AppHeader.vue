@@ -9,29 +9,21 @@
       </div>
 
       <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索表情包..."
-          class="max-w-md"
-          size="large"
-          clearable
-          @input="handleSearch"
-        >
+        <el-input v-model="searchKeyword" placeholder="搜索表情包..." class="max-w-md" size="large" clearable
+          @input="handleSearch">
           <template #prefix>
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
           </template>
         </el-input>
       </div>
 
       <div class="flex flex-wrap justify-center gap-3">
-        <el-button
-          v-for="category in categories"
-          :key="category.value"
+        <el-button v-for="category in categories" :key="category.value"
           :type="selectedCategory === category.value ? 'primary' : 'default'"
-          :class="{ 'bg-primary-500 text-white': selectedCategory === category.value }"
-          round
-          @click="handleCategoryChange(category.value)"
-        >
+          :class="{ 'bg-primary-500 text-white': selectedCategory === category.value }" round
+          @click="handleCategoryChange(category.value)">
           {{ category.label }}
         </el-button>
       </div>
@@ -40,30 +32,27 @@
       <!-- 统计信息 -->
       <div class="flex justify-center items-center gap-6 mt-4 text-sm text-gray-600">
         <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
-        <span>默认: {{ memeStore.getStatistics.byCategory.default }}</span>
+        <span v-for="cat in topCategories" :key="cat.id">
+          {{ cat.icon }} {{ cat.name }}: {{ memeStore.getStatistics.byCategory[cat.id] || 0 }}
+        </span>
       </div>
 
       <div class="flex justify-center gap-4 mt-4">
-        <router-link
-          to="/"
-          class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
-          :class="{ 'bg-primary-500 text-white': $route.name === 'home' }"
-        >
+        <router-link to="/" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-primary-500 text-white': $route.name === 'home' }">
           首页
         </router-link>
-        <router-link
-          to="/upload"
-          class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
-          :class="{ 'bg-primary-500 text-white': $route.name === 'upload' }"
-        >
+        <router-link to="/upload" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-primary-500 text-white': $route.name === 'upload' }">
           上传
         </router-link>
-        <router-link
-          to="/search"
-          class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
-          :class="{ 'bg-primary-500 text-white': $route.name === 'search' }"
-        >
+        <router-link to="/search" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-primary-500 text-white': $route.name === 'search' }">
           搜索
+        </router-link>
+        <router-link to="/categories" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-primary-500 text-white': $route.name === 'categories' }">
+          分类
         </router-link>
       </div>
 
@@ -72,20 +61,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import type { CategoryType } from '@/types'
+import { CategoryManager } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
 
 const searchKeyword = ref('')
 const selectedCategory = ref<CategoryType>('all')
 
-const categories = [
-  { value: 'all' as CategoryType, label: '全部' },
-  { value: 'default' as CategoryType, label: '默认' }
-]
+// 动态分类列表
+const categories = computed(() => {
+  const staticCategories = [
+    { value: 'all' as CategoryType, label: '全部' }
+  ]
+
+  const dynamicCategories = CategoryManager.getCategories().map(cat => ({
+    value: cat.id as CategoryType,
+    label: `${cat.icon || '📁'} ${cat.name}`
+  }))
+
+  return [...staticCategories, ...dynamicCategories]
+})
+
+// 显示前3个有内容的分类
+const topCategories = computed(() => {
+  const stats = memeStore.getStatistics
+  return CategoryManager.getCategories()
+    .filter(cat => (stats.byCategory[cat.id] || 0) > 0)
+    .sort((a, b) => (stats.byCategory[b.id] || 0) - (stats.byCategory[a.id] || 0))
+    .slice(0, 3)
+})
 
 const handleSearch = () => {
   memeStore.setSearchFilters({

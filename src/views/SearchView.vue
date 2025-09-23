@@ -218,6 +218,7 @@ import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
 import type { MemeData, CategoryType } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
+import { useRoute } from 'vue-router'
 
 const memeStore = useMemeStore()
 
@@ -446,7 +447,15 @@ watch(
 // 组件挂载时加载分类选项
 onMounted(() => {
   loadCategoryOptions()
+
+  // 检查URL查询参数，如果有category参数则设置为默认选中
+  const route = useRoute()
+  if (route.query.category && typeof route.query.category === 'string') {
+    searchForm.value.category = route.query.category
+    handleSearch()
+  }
 })
+
 </script>
 
 <style scoped>
