@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8" @click="handleContainerClick">
     <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mb-8">
       <div class="text-center mb-8">
         <h2 class="text-3xl font-bold text-gray-800 mb-4">🔍 高级搜索</h2>
@@ -93,63 +93,25 @@
           <h3 class="text-xl font-semibold text-gray-800">📋 搜索结果</h3>
           <div class="flex items-center gap-3">
             <span class="text-sm text-gray-500">共 {{ searchResults.length }} 个结果</span>
-            <el-switch
-              v-model="enableBatchMode"
-              active-text="批量操作"
-              inactive-text="普通模式"
-            />
-          </div>
-        </div>
-
-        <!-- 批量操作栏 -->
-        <div v-if="enableBatchMode" class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <el-checkbox
-                v-model="selectAll"
-                :indeterminate="selectedIds.length > 0 && selectedIds.length < searchResults.length"
-                @change="handleSelectAll"
-              >
-                全选 ({{ selectedIds.length }}/{{ searchResults.length }})
-              </el-checkbox>
-            </div>
-            <div class="flex gap-2">
-              <el-button
-                v-if="selectedIds.length > 0"
-                type="danger"
-                size="small"
-                @click="handleBatchDelete"
-              >
-                删除选中 ({{ selectedIds.length }})
-              </el-button>
-              <el-button
-                v-if="selectedIds.length > 0"
-                type="primary"
-                size="small"
-                @click="handleBatchExport"
-              >
-                导出选中 ({{ selectedIds.length }})
-              </el-button>
-            </div>
+            <span v-if="selectedIds.length > 0" class="text-sm text-blue-600 font-medium">
+              已选择 {{ selectedIds.length }} 张
+            </span>
           </div>
         </div>
 
         <!-- 网格模式 -->
         <div v-if="memeStore.viewMode === 'grid'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          <div v-for="meme in searchResults" :key="meme.id" class="relative">
-            <el-checkbox
-              v-if="enableBatchMode"
-              v-model="selectedIds"
-              :label="meme.id"
-              class="absolute top-2 left-2 z-10 bg-white rounded"
-            />
-            <MemeCard
-              :meme="meme"
-              @download="handleDownload"
-              @copy="handleCopy"
-              @delete="handleDelete"
-            />
-          </div>
+          <MemeCard
+            v-for="meme in searchResults"
+            :key="meme.id"
+            :meme="meme"
+            :selection-mode="selectionMode"
+            :is-selected="selectedIds.includes(meme.id)"
+            @download="handleDownload"
+            @copy="handleCopy"
+            @delete="handleDelete"
+            @toggle-selection="toggleSelection"
+          />
         </div>
 
         <!-- 列表模式 -->
@@ -157,17 +119,26 @@
           <div
             v-for="meme in searchResults"
             :key="meme.id"
-            class="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm border"
+            class="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm border cursor-pointer transition-all duration-200"
+            :class="{ 'border-blue-500 bg-blue-50': selectedIds.includes(meme.id) }"
+            @click.stop="selectionMode ? toggleSelection(meme.id) : undefined"
           >
-            <el-checkbox
-              v-if="enableBatchMode"
-              v-model="selectedIds"
-              :label="meme.id"
-            />
+            <!-- 选择指示器 -->
+            <div v-if="selectionMode" class="flex-shrink-0">
+              <div
+                class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200"
+                :class="selectedIds.includes(meme.id)
+                  ? 'bg-blue-500 border-blue-500 text-white'
+                  : 'border-gray-300 hover:border-blue-500'"
+              >
+                <el-icon v-if="selectedIds.includes(meme.id)" class="text-xs"><Check /></el-icon>
+              </div>
+            </div>
+
             <img
               :src="meme.imageUrl"
               :alt="meme.filename"
-              class="w-16 h-16 object-cover rounded-lg"
+              class="w-16 h-16 object-cover rounded-lg flex-shrink-0"
               @error="(e: any) => e.target.style.display = 'none'"
             />
             <div class="flex-1 min-w-0">
@@ -179,7 +150,7 @@
                 <span class="text-xs text-gray-400">{{ formatDate(meme.uploadDate) }}</span>
               </div>
             </div>
-            <div class="flex gap-2">
+            <div v-if="!selectionMode" class="flex gap-2 flex-shrink-0">
               <el-button size="small" @click="handleDownload(meme)">下载</el-button>
               <el-button size="small" type="success" @click="handleCopy(meme)">复制</el-button>
               <el-button size="small" type="danger" @click="handleDelete(meme)">删除</el-button>
@@ -207,15 +178,23 @@
         <p class="text-gray-500">输入关键词或选择分类来查找表情包</p>
       </div>
     </div>
+
+    <!-- 选择管理器 -->
+    <SelectionManager
+      v-model:selected-ids="selectedIds"
+      @selection-cleared="clearSelection"
+      @move-completed="handleMoveCompleted"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Check } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
+import SelectionManager from '@/components/SelectionManager.vue'
 import type { MemeData, CategoryType } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
 import { useRoute } from 'vue-router'
@@ -235,10 +214,11 @@ const searchForm = ref<SearchForm>({
 const hasSearched = ref(false)
 const categoryOptions = ref<Array<{ label: string; value: string; icon?: string }>>([])
 
-// 批量操作状态
-const enableBatchMode = ref(false)
+// 选择状态
 const selectedIds = ref<string[]>([])
-const selectAll = ref(false)
+
+// 选择模式（当有选择时自动激活）
+const selectionMode = computed(() => selectedIds.value.length > 0)
 
 // 搜索结果
 const searchResults = computed(() => {
@@ -263,59 +243,34 @@ const clearSearch = () => {
   hasSearched.value = false
 }
 
-// 全选/取消全选
-const handleSelectAll = (checked: boolean) => {
-  if (checked) {
-    selectedIds.value = searchResults.value.map(meme => meme.id)
+// 切换选择状态
+const toggleSelection = (memeId: string) => {
+  const index = selectedIds.value.indexOf(memeId)
+  if (index > -1) {
+    selectedIds.value.splice(index, 1)
   } else {
-    selectedIds.value = []
+    selectedIds.value.push(memeId)
   }
 }
 
-// 批量删除
-const handleBatchDelete = async () => {
-  if (selectedIds.value.length === 0) return
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedIds.value.length} 个表情包吗？`,
-      '批量删除',
-      {
-        type: 'warning',
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消'
-      }
-    )
-
-    const deleteCount = selectedIds.value.length
-    memeStore.removeMemes(selectedIds.value)
-    selectedIds.value = []
-    ElMessage.success(`已成功删除 ${deleteCount} 个表情包`)
-  } catch {
-    // 用户取消操作
-  }
+// 清除选择
+const clearSelection = () => {
+  selectedIds.value = []
 }
 
-// 批量导出
-const handleBatchExport = () => {
-  const selectedMemes = searchResults.value.filter(meme => selectedIds.value.includes(meme.id))
-  const exportData = {
-    memes: selectedMemes,
-    exportDate: new Date(),
-    version: '1.0'
+// 处理移动完成
+const handleMoveCompleted = (movedCount: number, targetCategoryName: string) => {
+  // 刷新搜索结果（重新执行搜索）
+  handleSearch()
+  ElMessage.success(`成功移动 ${movedCount} 张图片到「${targetCategoryName}」分类`)
+}
+
+// 点击容器空白区域清除选择
+const handleContainerClick = (event: MouseEvent) => {
+  // 只有在点击目标是容器本身时才清除选择
+  if (event.target === event.currentTarget && selectionMode.value) {
+    clearSelection()
   }
-
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `memes-export-${new Date().toISOString().split('T')[0]}.json`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-
-  ElMessage.success(`已导出 ${selectedMemes.length} 个表情包`)
 }
 
 // 导出搜索结果

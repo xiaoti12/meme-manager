@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8" @click="handleContainerClick">
     <!-- 加载状态 -->
     <div v-if="isLoading" class="text-center py-16">
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-12 card-shadow max-w-md mx-auto">
@@ -11,9 +11,17 @@
     <!-- 表情包分类展示 -->
     <div v-else-if="!isLoading && memeStore.filteredMemes.length > 0 && validCategories.length > 0" class="space-y-12">
       <!-- 动态分类 -->
-      <CategorySection v-for="categoryItem in categoriesToDisplay" :key="categoryItem.id" :title="categoryItem.name"
-        :icon="categoryItem.icon || '📂'" :memes="memeStore.memesByCategory[categoryItem.id]"
-        :category="categoryItem.id" />
+      <CategorySection
+        v-for="categoryItem in categoriesToDisplay"
+        :key="categoryItem.id"
+        :title="categoryItem.name"
+        :icon="categoryItem.icon || '📂'"
+        :memes="memeStore.memesByCategory[categoryItem.id]"
+        :category="categoryItem.id"
+        :selection-mode="selectionMode"
+        :selected-ids="selectedIds"
+        @toggle-selection="toggleSelection"
+      />
     </div>
 
     <!-- 空状态 -->
@@ -72,6 +80,13 @@
         </div>
       </div>
     </div>
+
+    <!-- 选择管理器 -->
+    <SelectionManager
+      v-model:selected-ids="selectedIds"
+      @selection-cleared="clearSelection"
+      @move-completed="handleMoveCompleted"
+    />
   </div>
 </template>
 
@@ -80,6 +95,7 @@ import { computed, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import CategorySection from '@/components/CategorySection.vue'
+import SelectionManager from '@/components/SelectionManager.vue'
 import { CategoryManager, type Category } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
@@ -87,6 +103,12 @@ const memeStore = useMemeStore()
 // 初始化为空数组，避免undefined问题
 const categoryList = ref<Category[]>([])
 const isLoading = ref(true)
+
+// 选择状态
+const selectedIds = ref<string[]>([])
+
+// 选择模式（当有选择时自动激活）
+const selectionMode = computed(() => selectedIds.value.length > 0)
 
 // 立即加载分类列表
 const loadCategories = async () => {
@@ -195,6 +217,36 @@ const importData = () => {
     }
   }
   input.click()
+}
+
+// 切换选择状态
+const toggleSelection = (memeId: string) => {
+  const index = selectedIds.value.indexOf(memeId)
+  if (index > -1) {
+    selectedIds.value.splice(index, 1)
+  } else {
+    selectedIds.value.push(memeId)
+  }
+}
+
+// 清除选择
+const clearSelection = () => {
+  selectedIds.value = []
+}
+
+// 处理移动完成
+const handleMoveCompleted = (movedCount: number, targetCategoryName: string) => {
+  // 重新加载分类数据，确保数据同步
+  loadCategories()
+  ElMessage.success(`成功移动 ${movedCount} 张图片到「${targetCategoryName}」分类`)
+}
+
+// 点击容器空白区域清除选择
+const handleContainerClick = (event: MouseEvent) => {
+  // 只有在点击目标是容器本身时才清除选择
+  if (event.target === event.currentTarget && selectionMode.value) {
+    clearSelection()
+  }
 }
 
 // 组件挂载时再次确保分类已加载（防止异步问题）

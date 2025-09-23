@@ -23,15 +23,21 @@
       </el-button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6"
+      @click.stop
+    >
       <MemeCard
         v-for="(meme, index) in memes"
         :key="meme.id"
         :meme="meme"
+        :selection-mode="selectionMode"
+        :is-selected="selectedIds.includes(meme.id)"
         @download="handleDownload"
         @copy="handleCopy"
         @delete="handleDelete"
         @gallery="openGallery(index)"
+        @toggle-selection="toggleSelection"
       />
     </div>
 
@@ -60,9 +66,22 @@ interface Props {
   icon: string
   memes: MemeData[]
   category: CategoryType
+  selectionMode?: boolean
+  selectedIds?: string[]
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selectionMode: false,
+  selectedIds: () => []
+})
+
+const emit = defineEmits<{
+  'toggle-selection': [memeId: string]
+}>()
+
+const toggleSelection = (memeId: string) => {
+  emit('toggle-selection', memeId)
+}
 
 const showGallery = ref(false)
 const galleryIndex = ref(0)

@@ -241,6 +241,32 @@ export const useMemeStore = defineStore('meme', () => {
     return updateCount
   }
 
+  // 批量更新指定表情包的分类（用于用户主动迁移）
+  const batchUpdateCategory = (ids: string[], targetCategory: string) => {
+    // 验证目标分类是否存在
+    const categories = CategoryManager.getCategories()
+    const categoryExists = categories.some(cat => cat.id === targetCategory)
+    if (!categoryExists) {
+      console.error('目标分类不存在:', targetCategory)
+      return 0
+    }
+
+    let updateCount = 0
+    memes.value.forEach(meme => {
+      if (ids.includes(meme.id) && meme.category !== targetCategory) {
+        meme.category = targetCategory
+        updateCount++
+      }
+    })
+
+    if (updateCount > 0) {
+      updateFuseInstance()
+      saveToStorage()
+    }
+
+    return updateCount
+  }
+
   // 设置搜索过滤器
   const setSearchFilters = (filters: SearchFilters) => {
     searchFilters.value = { ...filters }
@@ -422,6 +448,7 @@ export const useMemeStore = defineStore('meme', () => {
     removeMemes,
     updateMeme,
     updateMemesCategory,
+    batchUpdateCategory,
     getMemeById,
 
     // 搜索和筛选方法

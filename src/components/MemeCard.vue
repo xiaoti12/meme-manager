@@ -1,6 +1,15 @@
 <template>
-  <div class="bg-white rounded-2xl overflow-hidden card-shadow hover-lift transition-all duration-300 group cursor-pointer"
-       @click="$emit('gallery')">
+  <div
+    class="bg-white rounded-2xl overflow-hidden card-shadow hover-lift transition-all duration-300 group cursor-pointer meme-card"
+    :class="{ 'selected': isSelected, 'selection-mode': selectionMode }"
+    @click="handleCardClick"
+  >
+    <!-- 选择指示器 -->
+    <div v-if="selectionMode" class="selection-indicator" :class="{ 'selected': isSelected }">
+      <el-icon v-if="isSelected" class="check-icon"><Check /></el-icon>
+      <div v-else class="selection-circle"></div>
+    </div>
+
     <!-- 图片区域 -->
     <div class="relative aspect-square bg-gray-100 overflow-hidden">
       <img
@@ -27,8 +36,11 @@
         <el-icon size="48"><Picture /></el-icon>
       </div>
 
-      <!-- 悬停操作按钮 -->
-      <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+      <!-- 悬停操作按钮 (非选择模式下显示) -->
+      <div
+        v-if="!selectionMode"
+        class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100"
+      >
         <el-button
           type="primary"
           size="small"
@@ -96,20 +108,35 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { MemeData } from '@/types'
-import { Picture, Download, CopyDocument, Delete, Loading } from '@element-plus/icons-vue'
+import { Picture, Download, CopyDocument, Delete, Loading, Check } from '@element-plus/icons-vue'
 
 interface Props {
   meme: MemeData
+  selectionMode?: boolean
+  isSelected?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selectionMode: false,
+  isSelected: false
+})
 
-defineEmits<{
+const emit = defineEmits<{
   download: [meme: MemeData]
   copy: [meme: MemeData]
   delete: [meme: MemeData]
   gallery: []
+  'toggle-selection': [memeId: string]
 }>()
+
+// 处理卡片点击
+const handleCardClick = () => {
+  if (props.selectionMode) {
+    emit('toggle-selection', props.meme.id)
+  } else {
+    emit('gallery')
+  }
+}
 
 const imageError = ref(false)
 const imageLoaded = ref(false)
@@ -143,3 +170,71 @@ const formatDate = (timestamp: number) => {
   return new Date(timestamp).toLocaleString('zh-CN')
 }
 </script>
+
+<style scoped>
+/* 选择状态样式 */
+.meme-card {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.meme-card.selection-mode {
+  cursor: pointer;
+}
+
+.meme-card.selected {
+  border: 2px solid #409eff;
+  transform: scale(0.98);
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.1);
+}
+
+.selection-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+}
+
+.selection-indicator.selected {
+  background: #409eff;
+  color: white;
+  transform: scale(1.1);
+}
+
+.selection-circle {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #409eff;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.check-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 选择模式下的悬停效果 */
+.meme-card.selection-mode:hover:not(.selected) {
+  border: 2px solid rgba(64, 158, 255, 0.3);
+  transform: scale(0.99);
+}
+
+.meme-card.selection-mode:hover .selection-indicator:not(.selected) {
+  background: #409eff;
+}
+
+.meme-card.selection-mode:hover .selection-circle {
+  background: white;
+  border-color: white;
+}
+</style>
