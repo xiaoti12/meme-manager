@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import Fuse from 'fuse.js'
 import type { MemeData, SearchFilters, CategoryType } from '@/types'
+import { CategoryManager } from '@/utils/categoryManager'
 
 export const useMemeStore = defineStore('meme', () => {
   const memes = ref<MemeData[]>([])
@@ -140,14 +141,23 @@ export const useMemeStore = defineStore('meme', () => {
 
   // 按分类分组的表情包
   const memesByCategory = computed(() => {
-    const grouped = {
-      default: [] as MemeData[]
-    }
+    const categories = CategoryManager.getCategories()
+    const grouped: Record<string, MemeData[]> = {}
 
+    // 初始化所有分类
+    categories.forEach(cat => {
+      grouped[cat.id] = []
+    })
+
+    // 将表情包分配到对应分类
     filteredMemes.value.forEach(meme => {
       if (meme.category in grouped) {
-        grouped[meme.category as keyof typeof grouped].push(meme)
+        grouped[meme.category].push(meme)
       } else {
+        // 如果分类不存在，放到默认分类
+        if (!grouped.default) {
+          grouped.default = []
+        }
         grouped.default.push(meme)
       }
     })
@@ -213,6 +223,22 @@ export const useMemeStore = defineStore('meme', () => {
       return true
     }
     return false
+  }
+
+  // 批量更新表情包分类（用于分类删除时的数据迁移）
+  const updateMemesCategory = (fromCategory: string, toCategory: string) => {
+    let updateCount = 0
+    memes.value.forEach(meme => {
+      if (meme.category === fromCategory) {
+        meme.category = toCategory
+        updateCount++
+      }
+    })
+    if (updateCount > 0) {
+      updateFuseInstance()
+      saveToStorage()
+    }
+    return updateCount
   }
 
   // 设置搜索过滤器
@@ -324,22 +350,28 @@ export const useMemeStore = defineStore('meme', () => {
 
   // 获取统计信息
   const getStatistics = computed(() => {
+    const categories = CategoryManager.getCategories()
     const stats = {
       total: memes.value.length,
-      byCategory: {
-        default: 0
-      },
+      byCategory: {} as Record<string, number>,
       totalSize: 0,
       averageSize: 0,
       mostRecentUpload: null as Date | null,
       oldestUpload: null as Date | null
     }
 
+    // 初始化各分类计数
+    categories.forEach(cat => {
+      stats.byCategory[cat.id] = 0
+    })
+
     memes.value.forEach(meme => {
       // 按分类统计
       if (meme.category in stats.byCategory) {
-        stats.byCategory[meme.category as keyof typeof stats.byCategory]++
+        stats.byCategory[meme.category]++
       } else {
+        // 如果分类不存在，计入默认分类
+        if (!stats.byCategory.default) stats.byCategory.default = 0
         stats.byCategory.default++
       }
 
@@ -387,6 +419,7 @@ export const useMemeStore = defineStore('meme', () => {
     removeMeme,
     removeMemes,
     updateMeme,
+    updateMemesCategory,
     getMemeById,
 
     // 搜索和筛选方法

@@ -56,11 +56,34 @@
           </div>
         </el-upload>
 
-        <!-- 分类选择 -->
+        <!-- 分类选择和管理 -->
         <div class="mt-8 mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">📂 选择分类</label>
-          <el-select v-model="selectedCategory" placeholder="请选择分类" class="w-full">
-            <el-option label="默认" value="default" />
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-700">📂 选择分类</label>
+            <el-button
+              type="primary"
+              plain
+              size="small"
+              @click="showCategoryManager = true"
+            >
+              <el-icon><Setting /></el-icon>
+              管理分类
+            </el-button>
+          </div>
+          <el-select
+            v-model="selectedCategory"
+            placeholder="请选择分类"
+            class="w-full"
+            clearable
+          >
+            <el-option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            >
+              <span>{{ option.icon || '📁' }} {{ option.label }}</span>
+            </el-option>
           </el-select>
         </div>
 
@@ -125,13 +148,21 @@
     <el-dialog v-model="showConfigDialog" title="LLM大模型配置" width="700px" destroy-on-close>
       <LLMConfig @config-saved="handleConfigSaved" />
     </el-dialog>
+
+    <!-- 分类管理对话框 -->
+    <el-dialog v-model="showCategoryManager" title="分类管理" width="800px" destroy-on-close>
+      <CategoryManager
+        ref="categoryManagerRef"
+        @categories-updated="handleCategoriesUpdated"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UploadFilled, Loading } from '@element-plus/icons-vue'
+import { UploadFilled, Loading, Setting } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
@@ -140,7 +171,9 @@ import { DebugUpload } from '@/utils/debugUpload'
 import MultiFileUpload from '@/components/MultiFileUpload.vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 import LLMConfig from '@/components/LLMConfig.vue'
+import CategoryManager from '@/components/CategoryManager.vue'
 import type { MemeData, CategoryType } from '@/types'
+import { CategoryManager as CM } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
 const router = useRouter()
@@ -158,6 +191,9 @@ const aiResult = ref('')
 const isDragOver = ref(false)
 const uploadedFiles = ref<File[]>([])
 const showConfigDialog = ref(false)
+const showCategoryManager = ref(false)
+const categoryOptions = ref<Array<{ label: string; value: string; icon?: string }>>([])
+const categoryManagerRef = ref()
 
 const hasMultipleFiles = computed(() => uploadedFiles.value.length > 1)
 const isDev = computed(() => import.meta.env.DEV)
@@ -409,6 +445,38 @@ const handleConfigSaved = () => {
   showConfigDialog.value = false
   ElMessage.success('配置已保存！')
 }
+
+// 加载分类选项
+const loadCategoryOptions = () => {
+  categoryOptions.value = CM.getCategoryOptions()
+
+  // 如果当前选中的分类不存在了，重置为默认分类
+  if (selectedCategory.value && selectedCategory.value !== 'default') {
+    const exists = categoryOptions.value.some(opt => opt.value === selectedCategory.value)
+    if (!exists) {
+      selectedCategory.value = 'default'
+    }
+  }
+}
+
+// 处理分类更新事件
+const handleCategoriesUpdated = (payload?: { deletedCategoryId?: string }) => {
+  loadCategoryOptions()
+
+  // 如果删除的分类正好是当前选中的分类，重置为默认分类
+  if (payload?.deletedCategoryId && selectedCategory.value === payload.deletedCategoryId) {
+    selectedCategory.value = 'default'
+    ElMessage.info('当前选中的分类已删除，已切换到默认分类')
+  }
+
+  showCategoryManager.value = false
+  ElMessage.success('分类已更新！')
+}
+
+// 组件挂载时加载分类选项
+onMounted(() => {
+  loadCategoryOptions()
+})
 </script>
 
 <style scoped>

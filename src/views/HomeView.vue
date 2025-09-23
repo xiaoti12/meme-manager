@@ -2,13 +2,15 @@
   <div class="container mx-auto px-4 py-8">
     <!-- 表情包分类展示 -->
     <div v-if="memeStore.filteredMemes.length > 0" class="space-y-12">
-      <!-- 默认分类 -->
+      <!-- 动态分类 -->
       <CategorySection
-        v-if="memeStore.memesByCategory.default.length > 0"
-        title="默认"
-        icon="📂"
-        :memes="memeStore.memesByCategory.default"
-        category="default"
+        v-for="categoryItem in categoryList"
+        :key="categoryItem.id"
+        v-if="memeStore.memesByCategory[categoryItem.id]?.length > 0"
+        :title="categoryItem.name"
+        :icon="categoryItem.icon || '📂'"
+        :memes="memeStore.memesByCategory[categoryItem.id]"
+        :category="categoryItem.id"
       />
     </div>
 
@@ -36,9 +38,14 @@
           <div class="text-2xl font-bold text-primary-600">{{ stats.total }}</div>
           <div class="text-sm text-gray-500">总数量</div>
         </div>
-        <div class="text-center p-4 bg-white rounded-lg">
-          <div class="text-2xl font-bold text-blue-600">{{ stats.byCategory.default }}</div>
-          <div class="text-sm text-gray-500">默认</div>
+        <div
+          v-for="categoryItem in categoryList"
+          :key="categoryItem.id"
+          v-if="stats.byCategory[categoryItem.id] > 0"
+          class="text-center p-4 bg-white rounded-lg"
+        >
+          <div class="text-2xl font-bold text-blue-600">{{ stats.byCategory[categoryItem.id] }}</div>
+          <div class="text-sm text-gray-500">{{ categoryItem.icon }} {{ categoryItem.name }}</div>
         </div>
         <div class="text-center p-4 bg-white rounded-lg">
           <div class="text-2xl font-bold text-gray-600">{{ formatFileSize(stats.totalSize) }}</div>
@@ -71,15 +78,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import CategorySection from '@/components/CategorySection.vue'
+import { CategoryManager, type Category } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
+const categoryList = ref<Category[]>([])
 
 // 统计数据
 const stats = computed(() => memeStore.getStatistics)
+
+// 加载分类列表
+const loadCategories = () => {
+  categoryList.value = CategoryManager.getCategories()
+}
 
 // 工具函数
 const formatFileSize = (size: number) => {
@@ -129,6 +143,11 @@ const importData = () => {
   }
   input.click()
 }
+
+// 组件挂载时加载分类
+onMounted(() => {
+  loadCategories()
+})
 </script>
 
 <style scoped>

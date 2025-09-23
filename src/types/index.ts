@@ -19,7 +19,7 @@ export interface SearchFilters {
   keyword: string
 }
 
-export type CategoryType = 'all' | 'default'
+export type CategoryType = 'all' | 'default' | string
 
 export type SortType = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 

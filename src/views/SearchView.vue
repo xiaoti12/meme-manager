@@ -30,7 +30,14 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">📂 分类筛选</label>
             <el-select v-model="searchForm.category" placeholder="选择分类" class="w-full" size="large" @change="handleSearch">
               <el-option label="全部分类" value="all" />
-              <el-option label="默认" value="default" />
+              <el-option
+                v-for="option in categoryOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              >
+                <span>{{ option.icon || '📁' }} {{ option.label }}</span>
+              </el-option>
             </el-select>
           </div>
 
@@ -204,12 +211,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
 import type { MemeData, CategoryType } from '@/types'
+import { CategoryManager } from '@/utils/categoryManager'
 
 const memeStore = useMemeStore()
 
@@ -224,6 +232,7 @@ const searchForm = ref<SearchForm>({
 })
 
 const hasSearched = ref(false)
+const categoryOptions = ref<Array<{ label: string; value: string; icon?: string }>>([])
 
 // 批量操作状态
 const enableBatchMode = ref(false)
@@ -418,6 +427,11 @@ watch(searchResults, () => {
   selectAll.value = false
 })
 
+// 加载分类选项
+const loadCategoryOptions = () => {
+  categoryOptions.value = CategoryManager.getCategoryOptions()
+}
+
 // 监听表单变化，自动搜索
 watch(
   () => searchForm.value,
@@ -428,6 +442,11 @@ watch(
   },
   { deep: true }
 )
+
+// 组件挂载时加载分类选项
+onMounted(() => {
+  loadCategoryOptions()
+})
 </script>
 
 <style scoped>
