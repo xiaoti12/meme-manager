@@ -117,7 +117,7 @@ export class LLMVisionService {
             content: [
               {
                 type: 'text',
-                text: '请分析这张图片，提取其中的所有文字内容和对图片内容的描述。返回格式为JSON：{"text": "图片中的所有文字内容", "description": "对图片内容的详细描述"}'
+                text: '请分析这张图片，用中文简体返回结果。提取所有文字内容，并用简洁的语言描述图片内容。描述格式为：[角色类型]正在[做什么事情]，表情/神态：[表情神态描述]。返回格式为JSON：{"text": "图片中的所有文字内容", "description": "角色类型、行为和表情神态的简洁描述"}'
               },
               {
                 type: 'image_url',
