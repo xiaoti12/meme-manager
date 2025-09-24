@@ -49,46 +49,48 @@
       </div>
 
       <!-- 主要内容区域 -->
-      <div class="flex-1 flex items-center justify-center relative">
-        <!-- 上一张按钮 -->
-        <button
-          v-if="memes.length > 1"
-          @click="previousImage"
-          class="absolute left-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
-          :disabled="currentIndex === 0"
-        >
-          <el-icon size="20"><ArrowLeft /></el-icon>
-        </button>
+      <div class="flex-1 flex p-4 gap-4 relative">
+        <!-- 左侧图片显示区域 -->
+        <div class="flex-1 flex items-center justify-center relative">
+          <!-- 上一张按钮 -->
+          <button
+            v-if="memes.length > 1"
+            @click="previousImage"
+            class="absolute left-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
+            :disabled="currentIndex === 0"
+          >
+            <el-icon size="20"><ArrowLeft /></el-icon>
+          </button>
 
-        <!-- 图片显示 -->
-        <div class="max-w-full max-h-full p-8">
-          <img
-            v-if="currentMeme?.imageUrl"
-            :src="currentMeme.imageUrl"
-            :alt="currentMeme.filename"
-            class="max-w-full max-h-full object-contain"
-            @click="toggleInfo"
-          />
-          <div v-else class="text-white text-center">
-            <el-icon size="64"><Picture /></el-icon>
-            <p class="mt-4">图片加载失败</p>
+          <!-- 图片显示 -->
+          <div class="max-w-full max-h-full p-4">
+            <img
+              v-if="currentMeme?.imageUrl"
+              :src="currentMeme.imageUrl"
+              :alt="currentMeme.filename"
+              class="max-w-full max-h-full object-contain"
+            />
+            <div v-else class="text-white text-center">
+              <el-icon size="64"><Picture /></el-icon>
+              <p class="mt-4">图片加载失败</p>
+            </div>
           </div>
+
+          <!-- 下一张按钮 -->
+          <button
+            v-if="memes.length > 1"
+            @click="nextImage"
+            class="absolute right-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
+            :disabled="currentIndex === memes.length - 1"
+          >
+            <el-icon size="20"><ArrowRight /></el-icon>
+          </button>
         </div>
 
-        <!-- 下一张按钮 -->
-        <button
-          v-if="memes.length > 1"
-          @click="nextImage"
-          class="absolute right-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
-          :disabled="currentIndex === memes.length - 1"
-        >
-          <el-icon size="20"><ArrowRight /></el-icon>
-        </button>
-
-        <!-- 信息面板 -->
+        <!-- 右侧信息面板 -->
         <div
-          v-if="showInfo && currentMeme"
-          class="absolute right-4 top-4 w-80 bg-white rounded-lg shadow-lg p-4 max-h-96 overflow-y-auto"
+          v-if="currentMeme"
+          class="w-80 bg-white rounded-lg shadow-lg p-4 overflow-y-auto flex-shrink-0"
         >
           <div class="space-y-4">
             <div>
@@ -221,7 +223,7 @@ const emit = defineEmits<{
 }>()
 
 const currentIndex = ref(props.initialIndex)
-const showInfo = ref(false)
+const showInfo = ref(true)
 
 // OCR编辑相关状态
 const editingOcr = ref(false)
