@@ -15,7 +15,6 @@
         v-for="categoryItem in categoriesToDisplay"
         :key="categoryItem.id"
         :title="categoryItem.name"
-        :icon="categoryItem.icon || '📂'"
         :memes="memeStore.memesByCategory[categoryItem.id]"
         :category="categoryItem.id"
         :selection-mode="selectionMode"
@@ -106,8 +105,7 @@ const loadCategories = async () => {
       id: 'default',
       name: '默认',
       createdAt: new Date(),
-      color: '#64748b',
-      icon: '📂'
+      color: '#64748b'
     }]
   } finally {
     isLoading.value = false

@@ -33,7 +33,7 @@
       <div class="flex justify-center items-center gap-6 mt-4 text-sm text-gray-600">
         <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
         <span v-for="cat in topCategories" :key="cat.id">
-          {{ cat.icon }} {{ cat.name }}: {{ memeStore.getStatistics.byCategory[cat.id] || 0 }}
+          {{ cat.name }}: {{ memeStore.getStatistics.byCategory[cat.id] || 0 }}
         </span>
       </div>
 
@@ -84,7 +84,7 @@ const categories = computed(() => {
 
   const dynamicCategories = CategoryManager.getCategories().map(cat => ({
     value: cat.id as CategoryType,
-    label: `${cat.icon || '📁'} ${cat.name}`
+    label: cat.name
   }))
 
   return [...staticCategories, ...dynamicCategories]

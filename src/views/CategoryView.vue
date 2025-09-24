@@ -66,7 +66,6 @@
           <!-- 分类头部 -->
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-3">
-              <span class="text-2xl">{{ category.icon || '📁' }}</span>
               <div>
                 <h4 class="font-semibold text-gray-800">{{ category.name }}</h4>
                 <p class="text-xs text-gray-500">
@@ -203,19 +202,6 @@
             show-word-limit
           />
         </el-form-item>
-        <el-form-item label="图标">
-          <div class="flex items-center space-x-3">
-            <el-input
-              v-model="editingCategory.icon"
-              placeholder="选择一个表情符号"
-              maxlength="2"
-              style="width: 100px"
-            />
-            <div class="text-sm text-gray-500">
-              常用: 📁 📂 🎭 😀 🎪 💝 🌟 ⭐ 🔥 💯 🎨 🎬 🎮 🏆 💎
-            </div>
-          </div>
-        </el-form-item>
         <el-form-item label="颜色">
           <el-color-picker v-model="editingCategory.color" />
         </el-form-item>
@@ -256,7 +242,6 @@ const newCategory = reactive({
 const editingCategory = reactive({
   id: '',
   name: '',
-  icon: '',
   color: ''
 })
 
@@ -330,7 +315,6 @@ const editCategory = (category: Category) => {
   Object.assign(editingCategory, {
     id: category.id,
     name: category.name,
-    icon: category.icon || '📁',
     color: category.color || '#64748b'
   })
   showEditDialog.value = true
@@ -345,7 +329,6 @@ const updateCategory = async () => {
 
     const success = CategoryManager.updateCategory(editingCategory.id, {
       name: editingCategory.name,
-      icon: editingCategory.icon,
       color: editingCategory.color
     })
 

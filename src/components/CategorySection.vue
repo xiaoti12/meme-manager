@@ -2,10 +2,6 @@
   <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-             :class="categoryStyles[category]">
-          {{ icon }}
-        </div>
         <h2 class="text-2xl font-bold text-gray-800">
           {{ title }} ({{ memes.length }}张)
         </h2>
@@ -64,7 +60,6 @@ import { copyImageToClipboard } from '@/utils/clipboard'
 
 interface Props {
   title: string
-  icon: string
   memes: MemeData[]
   category: CategoryType
   selectionMode?: boolean

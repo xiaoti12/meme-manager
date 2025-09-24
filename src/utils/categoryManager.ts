@@ -8,7 +8,6 @@ export interface Category {
   name: string
   createdAt: Date
   color?: string
-  icon?: string
 }
 
 const STORAGE_KEY = 'meme-categories'
@@ -17,8 +16,7 @@ const DEFAULT_CATEGORIES: Category[] = [
     id: 'default',
     name: '默认',
     createdAt: new Date(),
-    color: '#64748b',
-    icon: '📂'
+    color: '#64748b'
   }
 ]
 
@@ -46,13 +44,12 @@ export class CategoryManager {
   /**
    * 添加新分类
    */
-  static addCategory(name: string, color?: string, icon?: string): Category {
+  static addCategory(name: string, color?: string): Category {
     const newCategory: Category = {
-      id: `category_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `category_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       name: name.trim(),
       createdAt: new Date(),
-      color: color || this.getRandomColor(),
-      icon: icon || '📁'
+      color: color || this.getRandomColor()
     }
 
     this.categories.push(newCategory)
@@ -117,12 +114,11 @@ export class CategoryManager {
   /**
    * 获取分类选项（用于选择器）
    */
-  static getCategoryOptions(): Array<{ label: string; value: string; color?: string; icon?: string }> {
+  static getCategoryOptions(): Array<{ label: string; value: string; color?: string }> {
     return this.categories.map(cat => ({
       label: cat.name,
       value: cat.id,
-      color: cat.color,
-      icon: cat.icon
+      color: cat.color
     }))
   }
 
@@ -152,8 +148,7 @@ export class CategoryManager {
           .map((cat: any) => ({
             ...cat,
             createdAt: new Date(cat.createdAt),
-            color: cat.color || '#64748b',
-            icon: cat.icon || '📂'
+            color: cat.color || '#64748b'
           }))
 
         this.categories = validCategories

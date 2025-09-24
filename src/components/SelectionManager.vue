@@ -22,7 +22,7 @@
             :value="category.id"
             :disabled="category.id === 'current'"
           >
-            <span>{{ category.icon || '📁' }} {{ category.name }}</span>
+            <span>{{ category.name }}</span>
           </el-option>
         </el-select>
 

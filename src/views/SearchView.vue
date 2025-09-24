@@ -36,7 +36,7 @@
                 :label="option.label"
                 :value="option.value"
               >
-                <span>{{ option.icon || '📁' }} {{ option.label }}</span>
+                <span>{{ option.label }}</span>
               </el-option>
             </el-select>
           </div>
