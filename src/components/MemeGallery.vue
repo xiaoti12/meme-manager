@@ -246,6 +246,8 @@ watch(() => props.initialIndex, (newIndex) => {
 
 watch(() => props.visible, (visible) => {
   if (visible) {
+    // 打开时启用页面滚动
+    enableBodyScroll()
     currentIndex.value = props.initialIndex
   } else {
     // 关闭时重置编辑状态
@@ -342,12 +344,26 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
+// 启用 body 滚动
+const enableBodyScroll = () => {
+  document.body.style.overflow = 'auto'
+  document.body.style.position = ''
+  document.body.style.width = ''
+  document.body.style.height = ''
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
+  // 确保页面滚动可用
+  if (props.visible) {
+    enableBodyScroll()
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  // 恢复默认的 overflow 行为
+  enableBodyScroll()
 })
 </script>
 
@@ -358,5 +374,15 @@ onUnmounted(() => {
 
 .meme-gallery :deep(.el-dialog) {
   margin: 0;
+}
+
+/* 确保全屏对话框不会禁用页面滚动 */
+.meme-gallery :deep(.el-overlay) {
+  overflow: visible !important;
+}
+
+/* 确保对话框本身不会阻止滚动 */
+.meme-gallery :deep(.el-dialog) {
+  overflow: visible !important;
 }
 </style>
