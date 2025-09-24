@@ -170,25 +170,12 @@ const isConfigured = computed(() => {
 })
 
 const loadConfig = () => {
-  const saved = localStorage.getItem('llm-config')
-  if (saved) {
-    try {
-      const config = JSON.parse(saved)
-      formData.baseUrl = config.baseUrl || ''
-      formData.model = config.model || ''
-      formData.token = config.token || ''
-
-      // 自动应用配置
-      if (isFormValid.value) {
-        LLMVisionService.setConfig({
-          baseUrl: formData.baseUrl,
-          model: formData.model,
-          token: formData.token
-        })
-      }
-    } catch (error) {
-      console.error('加载配置失败:', error)
-    }
+  // 使用 LLMVisionService 的统一配置加载方法
+  const config = LLMVisionService.getConfig()
+  if (config) {
+    formData.baseUrl = config.baseUrl
+    formData.model = config.model
+    formData.token = config.token
   }
 }
 

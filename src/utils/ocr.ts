@@ -43,7 +43,32 @@ export class LLMVisionService {
    * 获取当前配置
    */
   static getConfig(): LLMConfig | null {
-    return this.config
+    if (this.config) {
+      return this.config
+    }
+
+    // 如果配置为空，尝试从localStorage加载
+    return this.loadConfigFromStorage()
+  }
+
+  /**
+   * 从localStorage加载配置
+   */
+  private static loadConfigFromStorage(): LLMConfig | null {
+    try {
+      const saved = localStorage.getItem('llm-config')
+      if (saved) {
+        const config = JSON.parse(saved)
+        // 如果找到了有效配置，设置到当前实例
+        if (config.baseUrl && config.model && config.token) {
+          this.config = config
+          return config
+        }
+      }
+    } catch (error) {
+      console.error('从localStorage加载LLM配置失败:', error)
+    }
+    return null
   }
 
   /**
