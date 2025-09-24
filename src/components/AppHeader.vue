@@ -35,6 +35,9 @@
         <span v-for="cat in topCategories" :key="cat.id">
           {{ cat.name }}: {{ memeStore.getStatistics.byCategory[cat.id] || 0 }}
         </span>
+        <span v-if="memeStore.getStatistics.deleted > 0" class="text-orange-600">
+          回收站: {{ memeStore.getStatistics.deleted }}
+        </span>
       </div>
 
       <div class="flex justify-center gap-4 mt-4">
@@ -53,6 +56,10 @@
         <router-link to="/categories" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
           :class="{ 'bg-primary-500 text-white': $route.name === 'categories' }">
           分类
+        </router-link>
+        <router-link to="/trash" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-orange-500 text-white': $route.name === 'trash' }">
+          回收站
         </router-link>
       </div>
 

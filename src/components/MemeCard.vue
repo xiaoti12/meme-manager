@@ -63,7 +63,7 @@
           type="danger"
           size="small"
           circle
-          @click.stop="$emit('delete', meme)"
+          @click.stop="handleDelete"
           title="删除"
         >
           <el-icon><Delete /></el-icon>
@@ -110,6 +110,7 @@ import { ref, computed } from 'vue'
 import type { MemeData } from '@/types'
 import { Picture, Download, CopyDocument, Delete, Loading, Check } from '@element-plus/icons-vue'
 import { CategoryManager } from '@/utils/categoryManager'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 interface Props {
   meme: MemeData
@@ -167,6 +168,31 @@ const formatFileSize = (size: number) => {
 
 const formatDate = (timestamp: number) => {
   return new Date(timestamp).toLocaleString('zh-CN')
+}
+
+// 处理删除操作
+const handleDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除 "${props.meme.filename}" 吗？\n\n删除的图片将被移到回收站，可以随时恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        draggable: true,
+      }
+    )
+
+    // 用户确认删除，触发删除事件
+    emit('delete', props.meme)
+    ElMessage.success('图片已移至回收站')
+  } catch (error) {
+    // 用户取消删除
+    if (error !== 'cancel') {
+      console.error('删除确认对话框出错:', error)
+    }
+  }
 }
 </script>
 

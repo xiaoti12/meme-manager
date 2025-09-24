@@ -47,7 +47,8 @@ export const useMemeStore = defineStore('meme', () => {
         ocrText: '哈哈哈',
         aiDescription: '一个开心的表情',
         uploadDate: new Date(Date.now() - 86400000), // 1天前
-        fileSize: 1024
+        fileSize: 1024,
+        isDeleted: false
       },
       {
         id: '2',
@@ -57,7 +58,8 @@ export const useMemeStore = defineStore('meme', () => {
         ocrText: '呀~',
         aiDescription: '可爱的动漫少女角色',
         uploadDate: new Date(Date.now() - 172800000), // 2天前
-        fileSize: 2048
+        fileSize: 2048,
+        isDeleted: false
       },
       {
         id: '3',
@@ -67,7 +69,8 @@ export const useMemeStore = defineStore('meme', () => {
         ocrText: '什么?!',
         aiDescription: '表示惊讶的面部表情',
         uploadDate: new Date(Date.now() - 259200000), // 3天前
-        fileSize: 1536
+        fileSize: 1536,
+        isDeleted: false
       },
       {
         id: '4',
@@ -77,7 +80,8 @@ export const useMemeStore = defineStore('meme', () => {
         ocrText: '喵~',
         aiDescription: '戴着猫耳的可爱女孩',
         uploadDate: new Date(Date.now() - 345600000), // 4天前
-        fileSize: 3072
+        fileSize: 3072,
+        isDeleted: false
       },
       {
         id: '5',
@@ -87,7 +91,20 @@ export const useMemeStore = defineStore('meme', () => {
         ocrText: '呜呜呜',
         aiDescription: '伤心哭泣的表情',
         uploadDate: new Date(Date.now() - 432000000), // 5天前
-        fileSize: 2560
+        fileSize: 2560,
+        isDeleted: false
+      },
+      {
+        id: '6',
+        filename: '已删除的图片.png',
+        imageUrl: 'https://via.placeholder.com/300x300/FF0000/FFFFFF?text=❌',
+        category: 'default',
+        ocrText: '这个图片已被删除',
+        aiDescription: '这是一个测试软删除功能的图片',
+        uploadDate: new Date(Date.now() - 500000000), // 6天前
+        fileSize: 1024,
+        isDeleted: true,
+        deletedAt: new Date(Date.now() - 100000) // 100秒前删除的
       }
     ]
     memes.value = mockMemes
@@ -96,7 +113,7 @@ export const useMemeStore = defineStore('meme', () => {
 
   // 过滤后的表情包列表（支持模糊搜索）
   const filteredMemes = computed(() => {
-    let result = memes.value
+    let result = memes.value.filter(meme => !meme.isDeleted)
 
     // 分类筛选
     if (searchFilters.value.category !== 'all') {
@@ -194,11 +211,12 @@ export const useMemeStore = defineStore('meme', () => {
     saveToStorage()
   }
 
-  // 删除表情包
+  // 删除表情包（软删除）
   const removeMeme = (id: string) => {
-    const index = memes.value.findIndex(meme => meme.id === id)
-    if (index > -1) {
-      memes.value.splice(index, 1)
+    const meme = memes.value.find(meme => meme.id === id)
+    if (meme) {
+      meme.isDeleted = true
+      meme.deletedAt = new Date()
       updateFuseInstance()
       saveToStorage()
       return true
@@ -206,11 +224,21 @@ export const useMemeStore = defineStore('meme', () => {
     return false
   }
 
-  // 批量删除表情包
+  // 批量删除表情包（软删除）
   const removeMemes = (ids: string[]) => {
-    memes.value = memes.value.filter(meme => meme && !ids.includes(meme.id))
-    updateFuseInstance()
-    saveToStorage()
+    let deletedCount = 0
+    memes.value.forEach(meme => {
+      if (ids.includes(meme.id) && !meme.isDeleted) {
+        meme.isDeleted = true
+        meme.deletedAt = new Date()
+        deletedCount++
+      }
+    })
+    if (deletedCount > 0) {
+      updateFuseInstance()
+      saveToStorage()
+    }
+    return deletedCount
   }
 
   // 更新表情包
@@ -253,7 +281,7 @@ export const useMemeStore = defineStore('meme', () => {
 
     let updateCount = 0
     memes.value.forEach(meme => {
-      if (ids.includes(meme.id) && meme.category !== targetCategory) {
+      if (ids.includes(meme.id) && meme.category !== targetCategory && !meme.isDeleted) {
         meme.category = targetCategory
         updateCount++
       }
@@ -265,6 +293,65 @@ export const useMemeStore = defineStore('meme', () => {
     }
 
     return updateCount
+  }
+
+  // 恢复删除的表情包
+  const restoreMeme = (id: string) => {
+    const meme = memes.value.find(meme => meme.id === id)
+    if (meme && meme.isDeleted) {
+      meme.isDeleted = false
+      meme.deletedAt = null
+      updateFuseInstance()
+      saveToStorage()
+      return true
+    }
+    return false
+  }
+
+  // 批量恢复删除的表情包
+  const restoreMemes = (ids: string[]) => {
+    let restoredCount = 0
+    memes.value.forEach(meme => {
+      if (ids.includes(meme.id) && meme.isDeleted) {
+        meme.isDeleted = false
+        meme.deletedAt = null
+        restoredCount++
+      }
+    })
+    if (restoredCount > 0) {
+      updateFuseInstance()
+      saveToStorage()
+    }
+    return restoredCount
+  }
+
+  // 获取已删除的表情包
+  const deletedMemes = computed(() => {
+    return memes.value.filter(meme => meme.isDeleted)
+  })
+
+  // 永久删除表情包
+  const permanentDeleteMeme = (id: string) => {
+    const index = memes.value.findIndex(meme => meme.id === id)
+    if (index > -1) {
+      memes.value.splice(index, 1)
+      updateFuseInstance()
+      saveToStorage()
+      return true
+    }
+    return false
+  }
+
+  // 批量永久删除表情包
+  const permanentDeleteMemes = (ids: string[]) => {
+    const initialLength = memes.value.length
+    memes.value = memes.value.filter(meme => !ids.includes(meme.id))
+    const deletedCount = initialLength - memes.value.length
+    if (deletedCount > 0) {
+      updateFuseInstance()
+      saveToStorage()
+    }
+    return deletedCount
   }
 
   // 设置搜索过滤器
@@ -321,7 +408,10 @@ export const useMemeStore = defineStore('meme', () => {
           .filter((meme: any) => meme && meme.id)
           .map((meme: any) => ({
             ...meme,
-            uploadDate: new Date(meme.uploadDate)
+            uploadDate: new Date(meme.uploadDate),
+            // 数据迁移：为旧数据添加软删除字段
+            isDeleted: meme.isDeleted || false,
+            deletedAt: meme.deletedAt ? new Date(meme.deletedAt) : null
           }))
       }
 
@@ -379,8 +469,12 @@ export const useMemeStore = defineStore('meme', () => {
   // 获取统计信息
   const getStatistics = computed(() => {
     const categories = CategoryManager.getCategories()
+    const activeMemes = memes.value.filter(meme => !meme.isDeleted)
+    const deletedMemesList = memes.value.filter(meme => meme.isDeleted)
+
     const stats = {
-      total: memes.value.length,
+      total: activeMemes.length,
+      deleted: deletedMemesList.length,
       byCategory: {} as Record<string, number>,
       totalSize: 0,
       averageSize: 0,
@@ -393,7 +487,7 @@ export const useMemeStore = defineStore('meme', () => {
       stats.byCategory[cat.id] = 0
     })
 
-    memes.value.forEach(meme => {
+    activeMemes.forEach(meme => {
       // 按分类统计
       if (meme.category in stats.byCategory) {
         stats.byCategory[meme.category]++
@@ -441,6 +535,7 @@ export const useMemeStore = defineStore('meme', () => {
     filteredMemes,
     memesByCategory,
     getStatistics,
+    deletedMemes,
 
     // 数据操作方法
     addMeme,
@@ -450,6 +545,12 @@ export const useMemeStore = defineStore('meme', () => {
     updateMemesCategory,
     batchUpdateCategory,
     getMemeById,
+
+    // 软删除相关方法
+    restoreMeme,
+    restoreMemes,
+    permanentDeleteMeme,
+    permanentDeleteMemes,
 
     // 搜索和筛选方法
     setSearchFilters,

@@ -57,6 +57,7 @@ import MemeGallery from './MemeGallery.vue'
 import { ElMessage } from 'element-plus'
 import { FullScreen } from '@element-plus/icons-vue'
 import { copyImageToClipboard } from '@/utils/clipboard'
+import { useMemeStore } from '@/stores/meme'
 
 interface Props {
   title: string
@@ -70,6 +71,8 @@ const props = withDefaults(defineProps<Props>(), {
   selectionMode: false,
   selectedIds: () => []
 })
+
+const memeStore = useMemeStore()
 
 const emit = defineEmits<{
   'toggle-selection': [memeId: string]
@@ -117,7 +120,11 @@ const handleCopy = async (meme: MemeData) => {
 }
 
 const handleDelete = (meme: MemeData) => {
-  // 删除功能将在后续实现
-  ElMessage.info(`删除功能开发中...`)
+  const success = memeStore.removeMeme(meme.id)
+  if (success) {
+    ElMessage.success(`${meme.filename} 已移至回收站`)
+  } else {
+    ElMessage.error('删除失败，请重试')
+  }
 }
 </script>

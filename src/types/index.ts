@@ -12,6 +12,8 @@ export interface MemeData {
   height?: number
   format?: string
   cloudinaryId?: string
+  isDeleted?: boolean
+  deletedAt?: Date | null
 }
 
 export interface SearchFilters {
@@ -33,8 +35,10 @@ export interface UploadProgress {
 
 export interface MemeStatistics {
   total: number
+  deleted: number
   byCategory: {
     default: number
+    [key: string]: number
   }
   totalSize: number
   averageSize: number
