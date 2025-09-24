@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import type { CategoryType } from '@/types'
@@ -71,9 +71,13 @@ const memeStore = useMemeStore()
 
 const searchKeyword = ref('')
 const selectedCategory = ref<CategoryType>('all')
+const categoriesVersion = ref(0) // 用于强制更新计算属性
 
 // 动态分类列表
 const categories = computed(() => {
+  // 通过读取 categoriesVersion 来确保计算属性会在分类变化时重新计算
+  categoriesVersion.value // 这行代码确保依赖
+
   const staticCategories = [
     { value: 'all' as CategoryType, label: '全部' }
   ]
@@ -84,6 +88,23 @@ const categories = computed(() => {
   }))
 
   return [...staticCategories, ...dynamicCategories]
+})
+
+// 监听分类变化
+let unsubscribe: (() => void) | null = null
+
+onMounted(() => {
+  // 监听分类变化
+  unsubscribe = CategoryManager.addListener(() => {
+    categoriesVersion.value++
+  })
+})
+
+onUnmounted(() => {
+  // 清理监听器
+  if (unsubscribe) {
+    unsubscribe()
+  }
 })
 
 // 显示前3个有内容的分类

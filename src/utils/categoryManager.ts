@@ -24,6 +24,7 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export class CategoryManager {
   private static categories: Category[] = []
+  private static listeners: Array<() => void> = []
 
   /**
    * 初始化分类数据
@@ -56,6 +57,7 @@ export class CategoryManager {
 
     this.categories.push(newCategory)
     this.saveToStorage()
+    this.notifyListeners()
     return newCategory
   }
 
@@ -71,6 +73,7 @@ export class CategoryManager {
     if (index > -1) {
       this.categories.splice(index, 1)
       this.saveToStorage()
+      this.notifyListeners()
       return true
     }
     return false
@@ -88,6 +91,7 @@ export class CategoryManager {
         name: updates.name?.trim() || this.categories[index].name
       }
       this.saveToStorage()
+      this.notifyListeners()
       return true
     }
     return false
@@ -220,11 +224,39 @@ export class CategoryManager {
       }))
 
       this.saveToStorage()
+      this.notifyListeners()
       return true
     } catch (error) {
       console.error('导入分类数据失败:', error)
       return false
     }
+  }
+
+  /**
+   * 添加变化监听器
+   */
+  static addListener(callback: () => void): () => void {
+    this.listeners.push(callback)
+    // 返回取消监听的函数
+    return () => {
+      const index = this.listeners.indexOf(callback)
+      if (index > -1) {
+        this.listeners.splice(index, 1)
+      }
+    }
+  }
+
+  /**
+   * 通知所有监听器
+   */
+  private static notifyListeners(): void {
+    this.listeners.forEach(callback => {
+      try {
+        callback()
+      } catch (error) {
+        console.error('分类变化监听器执行失败:', error)
+      }
+    })
   }
 }
 
