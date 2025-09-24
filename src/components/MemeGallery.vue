@@ -101,10 +101,55 @@
               </div>
             </div>
 
-            <div v-if="currentMeme.ocrText">
-              <h4 class="text-sm font-semibold text-green-600 mb-2">OCR识别</h4>
-              <div class="bg-green-50 border-l-4 border-green-400 p-3 text-xs">
-                {{ currentMeme.ocrText }}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-green-600">OCR识别</h4>
+                <el-button
+                  v-if="!editingOcr"
+                  size="small"
+                  type="text"
+                  @click="startEditOcr"
+                  :title="currentMeme.ocrText ? '编辑OCR结果' : '添加OCR内容'"
+                >
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </div>
+
+              <!-- 显示模式 -->
+              <div v-if="!editingOcr" class="bg-green-50 border-l-4 border-green-400 p-3 text-xs">
+                <span v-if="currentMeme.ocrText">{{ currentMeme.ocrText }}</span>
+                <span v-else class="text-gray-400 italic">点击编辑按钮添加OCR内容</span>
+              </div>
+
+              <!-- 编辑模式 -->
+              <div v-else class="space-y-2">
+                <el-input
+                  v-model="editingOcrText"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="输入OCR识别文字..."
+                  size="small"
+                  @keydown.enter.ctrl="saveOcrEdit"
+                  @keydown.esc="cancelOcrEdit"
+                />
+                <div class="flex justify-end space-x-2">
+                  <el-button
+                    size="small"
+                    @click="cancelOcrEdit"
+                  >
+                    取消
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="saveOcrEdit"
+                  >
+                    保存
+                  </el-button>
+                </div>
+                <div class="text-xs text-gray-500">
+                  提示：Ctrl+Enter 保存，Esc 取消
+                </div>
               </div>
             </div>
 
@@ -146,14 +191,17 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { MemeData } from '@/types'
+import { useMemeStore } from '@/stores/meme'
 import {
   Close,
   Download,
   CopyDocument,
   ArrowLeft,
   ArrowRight,
-  Picture
+  Picture,
+  Edit
 } from '@element-plus/icons-vue'
 
 interface Props {
@@ -175,6 +223,13 @@ const emit = defineEmits<{
 const currentIndex = ref(props.initialIndex)
 const showInfo = ref(false)
 
+// OCR编辑相关状态
+const editingOcr = ref(false)
+const editingOcrText = ref('')
+
+// Store实例
+const memeStore = useMemeStore()
+
 const handleDialogClose = (value: boolean) => {
   if (!value) {
     emit('close')
@@ -190,7 +245,15 @@ watch(() => props.initialIndex, (newIndex) => {
 watch(() => props.visible, (visible) => {
   if (visible) {
     currentIndex.value = props.initialIndex
+  } else {
+    // 关闭时重置编辑状态
+    cancelOcrEdit()
   }
+})
+
+// 监听图片切换时重置编辑状态
+watch(currentIndex, () => {
+  cancelOcrEdit()
 })
 
 const previousImage = () => {
@@ -207,6 +270,39 @@ const nextImage = () => {
 
 const toggleInfo = () => {
   showInfo.value = !showInfo.value
+}
+
+// OCR编辑相关方法
+const startEditOcr = () => {
+  if (!currentMeme.value) return
+  editingOcr.value = true
+  editingOcrText.value = currentMeme.value.ocrText || ''
+}
+
+const cancelOcrEdit = () => {
+  editingOcr.value = false
+  editingOcrText.value = ''
+}
+
+const saveOcrEdit = async () => {
+  if (!currentMeme.value) return
+
+  try {
+    const success = memeStore.updateMeme(currentMeme.value.id, {
+      ocrText: editingOcrText.value.trim()
+    })
+
+    if (success) {
+      ElMessage.success('OCR内容已保存')
+      editingOcr.value = false
+      editingOcrText.value = ''
+    } else {
+      ElMessage.error('保存失败，请重试')
+    }
+  } catch (error) {
+    console.error('保存OCR编辑失败:', error)
+    ElMessage.error('保存失败，请重试')
+  }
 }
 
 const getCategoryName = (category: string) => {

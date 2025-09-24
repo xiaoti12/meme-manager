@@ -48,6 +48,54 @@
                   <span class="text-xs">{{ fileItem.error }}</span>
                 </div>
               </div>
+
+              <!-- OCR结果显示和编辑 -->
+              <div v-if="fileItem.status === 'completed'" class="mt-3 border-t pt-2">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-green-600">OCR识别</span>
+                  <el-button
+                    v-if="!fileItem.editingOcr"
+                    size="small"
+                    type="text"
+                    @click="startEditOcr(fileItem)"
+                    :title="fileItem.ocrResult ? '编辑OCR结果' : '添加OCR内容'"
+                  >
+                    <el-icon size="12"><Edit /></el-icon>
+                  </el-button>
+                </div>
+
+                <!-- 显示模式 -->
+                <div v-if="!fileItem.editingOcr" class="bg-green-50 border-l-2 border-green-400 p-2 text-xs rounded-r">
+                  <span v-if="fileItem.ocrResult">{{ fileItem.ocrResult }}</span>
+                  <span v-else class="text-gray-400 italic">点击编辑添加OCR内容</span>
+                </div>
+
+                <!-- 编辑模式 -->
+                <div v-else class="space-y-2">
+                  <el-input
+                    v-model="fileItem.editingOcrText"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="输入OCR识别文字..."
+                    size="small"
+                  />
+                  <div class="flex justify-end space-x-1">
+                    <el-button
+                      size="small"
+                      @click="cancelEditOcr(fileItem)"
+                    >
+                      取消
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="primary"
+                      @click="saveOcrEdit(fileItem)"
+                    >
+                      保存
+                    </el-button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- 删除按钮 -->
@@ -82,7 +130,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Clock, Check, Close, Delete } from '@element-plus/icons-vue'
+import { Clock, Check, Close, Delete, Edit } from '@element-plus/icons-vue'
 import { ImageProcessor } from '@/utils/image'
 import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
 import { useMemeStore } from '@/stores/meme'
@@ -97,6 +145,8 @@ interface FileItem {
   ocrResult: string
   aiResult: string
   error?: string
+  editingOcr?: boolean
+  editingOcrText?: string
 }
 
 interface Props {
@@ -148,6 +198,46 @@ const formatFileSize = (bytes: number): string => {
   return ImageProcessor.formatFileSize(bytes)
 }
 
+// OCR编辑相关方法
+const startEditOcr = (fileItem: FileItem) => {
+  fileItem.editingOcr = true
+  fileItem.editingOcrText = fileItem.ocrResult || ''
+}
+
+const cancelEditOcr = (fileItem: FileItem) => {
+  fileItem.editingOcr = false
+  fileItem.editingOcrText = ''
+}
+
+const saveOcrEdit = async (fileItem: FileItem) => {
+  if (!fileItem.editingOcrText) {
+    fileItem.editingOcrText = ''
+  }
+
+  // 更新当前文件项的OCR结果
+  fileItem.ocrResult = fileItem.editingOcrText.trim()
+  fileItem.editingOcr = false
+  fileItem.editingOcrText = ''
+
+  // 如果文件已经保存到store中，也需要更新store中的数据
+  // 通过文件名查找对应的meme并更新
+  const fileName = fileItem.file.name
+  const memes = memeStore.memes
+  const targetMeme = memes.find(meme => meme.filename === fileName)
+
+  if (targetMeme) {
+    const success = memeStore.updateMeme(targetMeme.id, {
+      ocrText: fileItem.ocrResult
+    })
+
+    if (success) {
+      ElMessage.success('OCR内容已保存')
+    } else {
+      ElMessage.error('保存失败，请重试')
+    }
+  }
+}
+
 const processFile = async (fileItem: FileItem): Promise<void> => {
   fileItem.status = 'processing'
   fileItem.progress = 0
@@ -181,6 +271,11 @@ const processFile = async (fileItem: FileItem): Promise<void> => {
         // 清理旧的预览URL
         ImageProcessor.cleanupUrls([fileItem.previewUrl])
         fileItem.previewUrl = result.memeData.imageUrl
+      }
+
+      // 如果用户已经编辑了OCR结果，优先使用用户的编辑
+      if (fileItem.ocrResult && fileItem.ocrResult !== result.memeData.ocrText) {
+        result.memeData.ocrText = fileItem.ocrResult
       }
 
       // 保存到store

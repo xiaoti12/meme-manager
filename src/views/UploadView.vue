@@ -106,9 +106,54 @@
 
           <!-- 处理结果 -->
           <div v-if="ocrResult || aiResult" class="mb-6 space-y-4">
-            <div v-if="ocrResult" class="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div class="text-sm font-semibold text-green-700 mb-2">✍️ OCR识别结果</div>
-              <div class="text-gray-700">{{ ocrResult }}</div>
+            <div v-if="ocrResult || editingOcr" class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm font-semibold text-green-700">✍️ OCR识别结果</div>
+                <el-button
+                  v-if="!editingOcr"
+                  size="small"
+                  type="text"
+                  @click="startEditOcr"
+                  :title="ocrResult ? '编辑OCR结果' : '添加OCR内容'"
+                >
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </div>
+
+              <!-- 显示模式 -->
+              <div v-if="!editingOcr" class="text-gray-700">
+                {{ ocrResult || '点击编辑按钮添加OCR内容' }}
+              </div>
+
+              <!-- 编辑模式 -->
+              <div v-else class="space-y-3">
+                <el-input
+                  v-model="editingOcrText"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="输入OCR识别文字..."
+                  @keydown.enter.ctrl="saveOcrEdit"
+                  @keydown.esc="cancelOcrEdit"
+                />
+                <div class="flex justify-end space-x-2">
+                  <el-button
+                    size="small"
+                    @click="cancelOcrEdit"
+                  >
+                    取消
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="saveOcrEdit"
+                  >
+                    保存
+                  </el-button>
+                </div>
+                <div class="text-xs text-gray-500">
+                  提示：Ctrl+Enter 保存，Esc 取消
+                </div>
+              </div>
             </div>
             <div v-if="aiResult" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div class="text-sm font-semibold text-blue-700 mb-2">🤖 AI分析结果</div>
@@ -144,7 +189,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UploadFilled, Loading } from '@element-plus/icons-vue'
+import { UploadFilled, Loading, Edit } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
@@ -169,6 +214,8 @@ const processingMessage = ref('')
 const processingProgress = ref(0)
 const ocrResult = ref('')
 const aiResult = ref('')
+const editingOcr = ref(false)
+const editingOcrText = ref('')
 const isDragOver = ref(false)
 const uploadedFiles = ref<File[]>([])
 const showConfigDialog = ref(false)
@@ -396,6 +443,8 @@ const resetForm = () => {
   selectedCategory.value = 'default'
   ocrResult.value = ''
   aiResult.value = ''
+  editingOcr.value = false
+  editingOcrText.value = ''
   processing.value = false
   processingProgress.value = 0
   processingMessage.value = ''
@@ -405,6 +454,30 @@ const resetForm = () => {
   // 清理多文件上传组件
   if (multiFileUploadRef.value) {
     multiFileUploadRef.value.clearQueue()
+  }
+}
+
+// OCR编辑相关方法
+const startEditOcr = () => {
+  editingOcr.value = true
+  editingOcrText.value = ocrResult.value || ''
+}
+
+const cancelOcrEdit = () => {
+  editingOcr.value = false
+  editingOcrText.value = ''
+}
+
+const saveOcrEdit = async () => {
+  try {
+    ocrResult.value = editingOcrText.value.trim()
+    editingOcr.value = false
+    editingOcrText.value = ''
+
+    ElMessage.success('OCR内容已保存')
+  } catch (error) {
+    console.error('保存OCR编辑失败:', error)
+    ElMessage.error('保存失败，请重试')
   }
 }
 
