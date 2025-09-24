@@ -37,7 +37,7 @@
           <p class="text-sm text-gray-600 mt-1">
             {{ serviceStatus.llm === '已配置' ?
                 '将使用真实的LLM模型同时进行OCR和图片分析' :
-                '将使用模拟的识别结果' }}
+                '无法进行图片分析，请先配置LLM服务' }}
           </p>
         </div>
 

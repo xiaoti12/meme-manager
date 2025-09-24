@@ -222,7 +222,7 @@ export class UploadService {
 
     return {
       cloudinary: status.cloudinary ? '已配置' : '未配置（将使用本地预览）',
-      llm: status.llm ? '已配置' : '未配置（将使用模拟分析）'
+      llm: status.llm ? '已配置' : '未配置（无法进行图片分析）'
     }
   }
 }
