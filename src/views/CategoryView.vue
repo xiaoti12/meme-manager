@@ -175,7 +175,7 @@
     </div>
 
     <!-- 添加分类对话框 -->
-    <el-dialog v-model="showAddDialog" title="添加分类" width="500px" destroy-on-close>
+    <el-dialog v-model="showAddDialog" title="添加分类" width="400px" destroy-on-close>
       <el-form :model="newCategory" :rules="categoryRules" ref="addFormRef" label-width="80px">
         <el-form-item label="分类名称" prop="name">
           <el-input
@@ -184,22 +184,6 @@
             maxlength="20"
             show-word-limit
           />
-        </el-form-item>
-        <el-form-item label="图标">
-          <div class="flex items-center space-x-3">
-            <el-input
-              v-model="newCategory.icon"
-              placeholder="选择一个表情符号"
-              maxlength="2"
-              style="width: 100px"
-            />
-            <div class="text-sm text-gray-500">
-              常用: 📁 📂 🎭 😀 🎪 💝 🌟 ⭐ 🔥 💯 🎨 🎬 🎮 🏆 💎
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item label="颜色">
-          <el-color-picker v-model="newCategory.color" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -265,9 +249,7 @@ const editFormRef = ref()
 
 // 新增分类表单
 const newCategory = reactive({
-  name: '',
-  icon: '📁',
-  color: '#64748b'
+  name: ''
 })
 
 // 编辑分类表单
@@ -329,21 +311,13 @@ const addCategory = async () => {
   try {
     await addFormRef.value.validate()
 
-    const category = CategoryManager.addCategory(
-      newCategory.name,
-      newCategory.color,
-      newCategory.icon
-    )
+    const category = CategoryManager.addCategory(newCategory.name)
 
     loadCategories()
     showAddDialog.value = false
 
     // 重置表单
-    Object.assign(newCategory, {
-      name: '',
-      icon: '📁',
-      color: '#64748b'
-    })
+    newCategory.name = ''
 
     ElMessage.success(`分类 "${category.name}" 添加成功！`)
   } catch (error) {

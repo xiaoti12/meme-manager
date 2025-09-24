@@ -66,20 +66,6 @@
             show-word-limit
           />
         </el-form-item>
-        <el-form-item label="图标">
-          <el-input
-            v-model="newCategory.icon"
-            placeholder="选择一个表情符号"
-            maxlength="2"
-            style="width: 100px"
-          />
-          <div class="ml-3 text-sm text-gray-500">
-            常用: 📁 📂 🎭 😀 🎪 💝 🌟 ⭐ 🔥 💯
-          </div>
-        </el-form-item>
-        <el-form-item label="颜色">
-          <el-color-picker v-model="newCategory.color" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAddDialog = false">取消</el-button>
@@ -138,9 +124,7 @@ const memeStore = useMemeStore()
 
 // 新增分类表单
 const newCategory = reactive({
-  name: '',
-  icon: '📁',
-  color: '#64748b'
+  name: ''
 })
 
 // 编辑分类表单
@@ -188,21 +172,13 @@ const addCategory = async () => {
   try {
     await addFormRef.value.validate()
 
-    const category = CategoryManager.addCategory(
-      newCategory.name,
-      newCategory.color,
-      newCategory.icon
-    )
+    const category = CategoryManager.addCategory(newCategory.name)
 
     loadCategories()
     showAddDialog.value = false
 
     // 重置表单
-    Object.assign(newCategory, {
-      name: '',
-      icon: '📁',
-      color: '#64748b'
-    })
+    newCategory.name = ''
 
     ElMessage.success(`分类 "${category.name}" 添加成功！`)
 
