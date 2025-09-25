@@ -1,3 +1,10 @@
+export interface Category {
+  id: string
+  name: string
+  createdAt: Date
+  color?: string
+}
+
 export interface MemeData {
   id: string
   filename: string
@@ -48,6 +55,7 @@ export interface MemeStatistics {
 
 export interface ExportData {
   memes: MemeData[]
+  categories: Category[]
   exportDate: Date
   version: string
 }

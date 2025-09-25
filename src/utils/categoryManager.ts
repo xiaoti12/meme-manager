@@ -207,17 +207,39 @@ export class CategoryManager {
         return false
       }
 
+      // 获取当前分类
+      const currentCategories = this.getCategories()
+      const mergedCategories = [...currentCategories]
+
+      // 处理导入的分类
+      categories.forEach(importCategory => {
+        const existingIndex = mergedCategories.findIndex(cat => cat.id === importCategory.id)
+
+        if (existingIndex > -1) {
+          // 分类已存在，更新信息（但保留原创建时间）
+          if (importCategory.id !== 'default') { // 默认分类不允许修改名称
+            mergedCategories[existingIndex] = {
+              ...mergedCategories[existingIndex],
+              name: importCategory.name,
+              color: importCategory.color || mergedCategories[existingIndex].color
+            }
+          }
+        } else {
+          // 分类不存在，添加新分类
+          mergedCategories.push({
+            ...importCategory,
+            createdAt: new Date(importCategory.createdAt)
+          })
+        }
+      })
+
       // 确保包含默认分类
-      const hasDefault = categories.some(cat => cat.id === 'default')
+      const hasDefault = mergedCategories.some(cat => cat.id === 'default')
       if (!hasDefault) {
-        categories.unshift(DEFAULT_CATEGORIES[0])
+        mergedCategories.unshift(DEFAULT_CATEGORIES[0])
       }
 
-      this.categories = categories.map(cat => ({
-        ...cat,
-        createdAt: new Date(cat.createdAt)
-      }))
-
+      this.categories = mergedCategories
       this.saveToStorage()
       this.notifyListeners()
       return true

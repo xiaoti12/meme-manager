@@ -440,26 +440,72 @@ export const useMemeStore = defineStore('meme', () => {
   const exportData = () => {
     return {
       memes: memes.value,
+      categories: CategoryManager.getCategories(),
       exportDate: new Date(),
-      version: '1.0'
+      version: '1.1'
     }
   }
 
   // 导入数据
   const importData = (data: any) => {
     try {
-      if (data.memes && Array.isArray(data.memes)) {
-        memes.value = data.memes
-          .filter((meme: any) => meme && meme.id)
-          .map((meme: any) => ({
-            ...meme,
-            uploadDate: new Date(meme.uploadDate)
-          }))
-        updateFuseInstance()
-        saveToStorage()
-        return true
+      // 验证基本数据结构
+      if (!data || typeof data !== 'object') {
+        console.error('导入数据格式错误：数据不是对象')
+        return false
       }
-      return false
+
+      // 验证表情包数据
+      if (!data.memes || !Array.isArray(data.memes)) {
+        console.error('导入数据格式错误：缺少有效的表情包数据')
+        return false
+      }
+
+      // 导入分类数据（新版本支持）
+      if (data.categories && Array.isArray(data.categories)) {
+        // 验证分类数据格式
+        const validCategories = data.categories.filter((cat: any) =>
+          cat && cat.id && cat.name && typeof cat.id === 'string' && typeof cat.name === 'string'
+        )
+
+        if (validCategories.length > 0) {
+          CategoryManager.importCategories(validCategories)
+        }
+      }
+
+      // 导入表情包数据
+      const validMemes = data.memes.filter((meme: any) => {
+        return meme && meme.id && meme.filename && meme.imageUrl && meme.category
+      })
+
+      if (validMemes.length === 0) {
+        console.error('导入数据格式错误：没有有效的表情包数据')
+        return false
+      }
+
+      // 处理表情包数据
+      memes.value = validMemes.map((meme: any) => {
+        const processedMeme = {
+          ...meme,
+          uploadDate: meme.uploadDate ? new Date(meme.uploadDate) : new Date(),
+          // 数据迁移：为旧数据添加软删除字段
+          isDeleted: meme.isDeleted || false,
+          deletedAt: meme.deletedAt ? new Date(meme.deletedAt) : null
+        }
+
+        // 验证分类是否存在，如果不存在则设置为默认分类
+        const categories = CategoryManager.getCategories()
+        if (!categories.some(cat => cat.id === processedMeme.category)) {
+          console.warn(`表情包 "${meme.filename}" 的分类 "${meme.category}" 不存在，已设置为默认分类`)
+          processedMeme.category = 'default'
+        }
+
+        return processedMeme
+      })
+
+      updateFuseInstance()
+      saveToStorage()
+      return true
     } catch (error) {
       console.error('导入数据失败:', error)
       return false
