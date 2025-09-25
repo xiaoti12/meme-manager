@@ -96,6 +96,15 @@
             <span v-if="selectedIds.length > 0" class="text-sm text-blue-600 font-medium">
               已选择 {{ selectedIds.length }} 张
             </span>
+            <el-button
+              :type="isMultiSelectMode ? 'danger' : 'primary'"
+              size="small"
+              round
+              @click="toggleMultiSelectMode"
+            >
+              <el-icon><Select /></el-icon>
+              {{ isMultiSelectMode ? '取消选择' : '批量管理' }}
+            </el-button>
           </div>
         </div>
 
@@ -107,10 +116,12 @@
             :meme="meme"
             :selection-mode="selectionMode"
             :is-selected="selectedIds.includes(meme.id)"
+            :is-multi-select-mode="isMultiSelectMode"
             @download="handleDownload"
             @copy="handleCopy"
             @delete="handleDelete"
             @toggle-selection="toggleSelection"
+            @long-press-select="handleLongPressSelect"
           />
         </div>
 
@@ -190,7 +201,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { Search, Check } from '@element-plus/icons-vue'
+import { Search, Check, Select } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
@@ -217,9 +228,10 @@ const categoryOptions = ref<Array<{ label: string; value: string; icon?: string 
 
 // 选择状态
 const selectedIds = ref<string[]>([])
+const isMultiSelectMode = ref(false)
 
-// 选择模式（当有选择时自动激活）
-const selectionMode = computed(() => selectedIds.value.length > 0)
+// 选择模式（多选按钮激活或有选中项时自动激活）
+const selectionMode = computed(() => isMultiSelectMode.value || selectedIds.value.length > 0)
 
 // 搜索结果
 const searchResults = computed(() => {
@@ -257,6 +269,33 @@ const toggleSelection = (memeId: string) => {
 // 清除选择
 const clearSelection = () => {
   selectedIds.value = []
+  isMultiSelectMode.value = false
+}
+
+// 切换多选模式
+const toggleMultiSelectMode = () => {
+  if (isMultiSelectMode.value) {
+    // 退出多选模式
+    isMultiSelectMode.value = false
+    selectedIds.value = []
+    ElMessage.info('已退出批量管理模式')
+  } else {
+    // 进入多选模式
+    isMultiSelectMode.value = true
+    ElMessage.info('已进入批量管理模式，点击图片进行选择')
+  }
+}
+
+// 长按选择处理
+const handleLongPressSelect = (memeId: string) => {
+  if (!isMultiSelectMode.value) {
+    isMultiSelectMode.value = true
+    ElMessage.info('已进入批量管理模式')
+  }
+  // 确保该图片被选中
+  if (!selectedIds.value.includes(memeId)) {
+    selectedIds.value.push(memeId)
+  }
 }
 
 // 处理移动完成

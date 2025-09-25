@@ -1,8 +1,18 @@
 <template>
   <div
     class="bg-white rounded-2xl overflow-hidden card-shadow hover-lift transition-all duration-300 group cursor-pointer meme-card"
-    :class="{ 'selected': isSelected, 'selection-mode': selectionMode }"
+    :class="{
+      'selected': isSelected,
+      'selection-mode': selectionMode,
+      'long-pressing': isLongPressing
+    }"
     @click="handleCardClick"
+    @mousedown="handleMouseDown"
+    @mouseup="handleMouseUp"
+    @mouseleave="handleMouseLeave"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd"
+    @touchcancel="handleTouchCancel"
   >
     <!-- 选择指示器 -->
     <div v-if="selectionMode" class="selection-indicator" :class="{ 'selected': isSelected }">
@@ -116,11 +126,13 @@ interface Props {
   meme: MemeData
   selectionMode?: boolean
   isSelected?: boolean
+  isMultiSelectMode?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectionMode: false,
-  isSelected: false
+  isSelected: false,
+  isMultiSelectMode: false
 })
 
 const emit = defineEmits<{
@@ -129,15 +141,81 @@ const emit = defineEmits<{
   delete: [meme: MemeData]
   gallery: []
   'toggle-selection': [memeId: string]
+  'long-press-select': [memeId: string]
 }>()
+
+// 长按相关状态
+const isLongPressing = ref(false)
+const longPressTimer = ref<number | null>(null)
+const isClickSuppressed = ref(false)
 
 // 处理卡片点击
 const handleCardClick = () => {
+  // 如果是长按触发的点击，忽略
+  if (isClickSuppressed.value) {
+    isClickSuppressed.value = false
+    return
+  }
+
   if (props.selectionMode) {
     emit('toggle-selection', props.meme.id)
   } else {
     emit('gallery')
   }
+}
+
+// 清理长按计时器
+const clearLongPressTimer = () => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  isLongPressing.value = false
+}
+
+// 触发长按选择
+const triggerLongPressSelect = () => {
+  isClickSuppressed.value = true
+  emit('long-press-select', props.meme.id)
+  clearLongPressTimer()
+}
+
+// 鼠标事件处理
+const handleMouseDown = (event: MouseEvent) => {
+  // 只响应左键
+  if (event.button !== 0) return
+
+  isLongPressing.value = true
+  longPressTimer.value = window.setTimeout(() => {
+    triggerLongPressSelect()
+  }, 500)
+}
+
+const handleMouseUp = () => {
+  clearLongPressTimer()
+}
+
+const handleMouseLeave = () => {
+  clearLongPressTimer()
+}
+
+// 触摸事件处理
+const handleTouchStart = (event: TouchEvent) => {
+  // 防止默认的触摸行为
+  event.preventDefault()
+
+  isLongPressing.value = true
+  longPressTimer.value = window.setTimeout(() => {
+    triggerLongPressSelect()
+  }, 500)
+}
+
+const handleTouchEnd = () => {
+  clearLongPressTimer()
+}
+
+const handleTouchCancel = () => {
+  clearLongPressTimer()
 }
 
 const imageError = ref(false)
@@ -211,6 +289,13 @@ const handleDelete = async () => {
   border: 2px solid #409eff;
   transform: scale(0.98);
   box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.1);
+}
+
+/* 长按状态样式 */
+.meme-card.long-pressing {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(64, 158, 255, 0.5);
 }
 
 .selection-indicator {

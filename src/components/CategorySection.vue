@@ -7,16 +7,27 @@
         </h2>
       </div>
 
-      <el-button
-        v-if="memes.length > 0"
-        type="primary"
-        size="small"
-        round
-        @click="openGallery(0)"
-      >
-        <el-icon><FullScreen /></el-icon>
-        全屏浏览
-      </el-button>
+      <div v-if="memes.length > 0" class="flex items-center gap-2">
+        <el-button
+          :type="isMultiSelectMode ? 'danger' : 'primary'"
+          size="small"
+          round
+          @click="handleToggleMultiSelect"
+        >
+          <el-icon><Select /></el-icon>
+          {{ isMultiSelectMode ? '取消选择' : '批量管理' }}
+        </el-button>
+
+        <el-button
+          type="info"
+          size="small"
+          round
+          @click="openGallery(0)"
+        >
+          <el-icon><FullScreen /></el-icon>
+          全屏浏览
+        </el-button>
+      </div>
     </div>
 
     <div
@@ -29,11 +40,13 @@
         :meme="meme"
         :selection-mode="selectionMode"
         :is-selected="selectedIds.includes(meme.id)"
+        :is-multi-select-mode="isMultiSelectMode"
         @download="handleDownload"
         @copy="handleCopy"
         @delete="handleDelete"
         @gallery="openGallery(index)"
         @toggle-selection="toggleSelection"
+        @long-press-select="handleLongPressSelect"
       />
     </div>
 
@@ -55,7 +68,7 @@ import type { MemeData, CategoryType } from '@/types'
 import MemeCard from './MemeCard.vue'
 import MemeGallery from './MemeGallery.vue'
 import { ElMessage } from 'element-plus'
-import { FullScreen } from '@element-plus/icons-vue'
+import { FullScreen, Select } from '@element-plus/icons-vue'
 import { copyImageToClipboard } from '@/utils/clipboard'
 import { useMemeStore } from '@/stores/meme'
 
@@ -65,21 +78,33 @@ interface Props {
   category: CategoryType
   selectionMode?: boolean
   selectedIds?: string[]
+  isMultiSelectMode?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectionMode: false,
-  selectedIds: () => []
+  selectedIds: () => [],
+  isMultiSelectMode: false
 })
 
 const memeStore = useMemeStore()
 
 const emit = defineEmits<{
   'toggle-selection': [memeId: string]
+  'long-press-select': [memeId: string]
+  'toggle-multi-select': []
 }>()
 
 const toggleSelection = (memeId: string) => {
   emit('toggle-selection', memeId)
+}
+
+const handleLongPressSelect = (memeId: string) => {
+  emit('long-press-select', memeId)
+}
+
+const handleToggleMultiSelect = () => {
+  emit('toggle-multi-select')
 }
 
 const showGallery = ref(false)
