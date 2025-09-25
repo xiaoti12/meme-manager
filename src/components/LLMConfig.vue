@@ -11,31 +11,27 @@
       </template>
 
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="100px">
+        <el-form-item label="服务商" prop="provider" required>
+          <el-select v-model="formData.provider" placeholder="选择服务商" style="width: 100%" @change="handleProviderChange">
+            <el-option v-for="provider in providers" :key="provider.value" :label="provider.label"
+              :value="provider.value">
+              <span>{{ provider.label }}</span>
+              <span class="model-desc">{{ provider.desc }}</span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="API端点" prop="baseUrl" required>
-          <el-input
-            v-model="formData.baseUrl"
-            placeholder="例如: https://api.openai.com/v1"
-            clearable
-          />
+          <el-input v-model="formData.baseUrl" :placeholder="baseUrlPlaceholder" clearable />
           <div class="form-tip">
-            支持OpenAI兼容的API端点，如OpenAI、Claude、本地模型等
+            {{ formData.provider === 'gemini' ? 'Google Gemini API端点，通常为固定值' : '支持OpenAI兼容的API端点，如OpenAI、Claude、本地模型等'
+            }}
           </div>
         </el-form-item>
 
         <el-form-item label="模型名称" prop="model" required>
-          <el-select
-            v-model="formData.model"
-            placeholder="选择或输入模型名称"
-            filterable
-            allow-create
-            style="width: 100%"
-          >
-            <el-option
-              v-for="model in popularModels"
-              :key="model.value"
-              :label="model.label"
-              :value="model.value"
-            >
+          <el-select v-model="formData.model" placeholder="选择或输入模型名称" filterable allow-create style="width: 100%">
+            <el-option v-for="model in popularModels" :key="model.value" :label="model.label" :value="model.value">
               <span>{{ model.label }}</span>
               <span class="model-desc">{{ model.desc }}</span>
             </el-option>
@@ -46,13 +42,7 @@
         </el-form-item>
 
         <el-form-item label="API密钥" prop="token" required>
-          <el-input
-            v-model="formData.token"
-            type="password"
-            placeholder="输入您的API密钥"
-            show-password
-            clearable
-          />
+          <el-input v-model="formData.token" type="password" placeholder="输入您的API密钥" show-password clearable />
           <div class="form-tip">
             密钥将保存在本地浏览器中，不会上传到服务器
           </div>
@@ -76,13 +66,8 @@
       <div class="test-section">
         <h4>连接测试</h4>
         <div v-if="testResult" class="test-result">
-          <el-alert
-            :title="testResult.success ? '连接成功' : '连接失败'"
-            :type="testResult.success ? 'success' : 'error'"
-            :description="testResult.message"
-            show-icon
-            :closable="false"
-          />
+          <el-alert :title="testResult.success ? '连接成功' : '连接失败'" :type="testResult.success ? 'success' : 'error'"
+            :description="testResult.message" show-icon :closable="false" />
         </div>
         <div v-if="!testResult" class="test-placeholder">
           <el-text type="info">配置完成后点击"测试连接"来验证设置</el-text>
@@ -102,6 +87,7 @@ interface LLMFormData {
   baseUrl: string
   model: string
   token: string
+  provider: 'openai' | 'gemini'
 }
 
 interface TestResult {
@@ -116,36 +102,66 @@ const testResult = ref<TestResult | null>(null)
 const formData = reactive<LLMFormData>({
   baseUrl: '',
   model: '',
-  token: ''
+  token: '',
+  provider: LLMVisionService.getLastSelectedProvider()
 })
 
-const popularModels = [
+const providerModels = {
+  openai: [
+    {
+      label: 'GPT-4 Vision Preview',
+      value: 'gpt-4-vision-preview',
+      desc: 'OpenAI最新视觉模型'
+    },
+    {
+      label: 'GPT-4o',
+      value: 'gpt-4o',
+      desc: 'OpenAI多模态模型'
+    },
+    {
+      label: 'GPT-4o-Mini',
+      value: 'gpt-4o-mini',
+      desc: 'OpenAI轻量多模态模型'
+    },
+    {
+      label: 'Claude 3 Opus',
+      value: 'claude-3-opus-20240229',
+      desc: 'Anthropic最强视觉模型'
+    },
+  ],
+  gemini: [
+    {
+      label: 'Gemini 2.5 Pro',
+      value: 'gemini-2.5-pro',
+      desc: 'Google最新多模态模型'
+    },
+    {
+      label: 'Gemini 2.5 Flash',
+      value: 'gemini-2.5-flash',
+      desc: 'Google快速多模态模型'
+    },
+    {
+      label: 'Gemini 2.5 Flash Lite',
+      value: 'gemini-2.5-flash-lite',
+      desc: 'Google轻量多模态模型'
+    }
+  ]
+}
+
+const providers = [
   {
-    label: 'GPT-4 Vision Preview',
-    value: 'gpt-4-vision-preview',
-    desc: 'OpenAI最新视觉模型'
+    label: 'OpenAI',
+    value: 'openai' as const,
+    desc: 'OpenAI兼容接口（包含Claude等）'
   },
   {
-    label: 'GPT-4o',
-    value: 'gpt-4o',
-    desc: 'OpenAI多模态模型'
-  },
-  {
-    label: 'Claude 3 Sonnet',
-    value: 'claude-3-sonnet-20240229',
-    desc: 'Anthropic视觉模型'
-  },
-  {
-    label: 'Claude 3 Opus',
-    value: 'claude-3-opus-20240229',
-    desc: 'Anthropic最强视觉模型'
-  },
-  {
-    label: 'Qwen-VL-Chat',
-    value: 'qwen-vl-chat',
-    desc: '阿里云千问视觉模型'
+    label: 'Google Gemini',
+    value: 'gemini' as const,
+    desc: 'Google Gemini原生接口'
   }
 ]
+
+const popularModels = computed(() => providerModels[formData.provider])
 
 const rules = {
   baseUrl: [
@@ -161,21 +177,64 @@ const rules = {
   ]
 }
 
+const baseUrlPlaceholder = computed(() => {
+  return formData.provider === 'gemini'
+    ? '例如: https://generativelanguage.googleapis.com'
+    : '例如: https://api.openai.com/v1'
+})
+
 const isFormValid = computed(() => {
   return formData.baseUrl && formData.model && formData.token
 })
 
 const isConfigured = computed(() => {
-  return !!LLMVisionService.getConfig()
+  const config = LLMVisionService.getProviderConfig(formData.provider)
+  return !!config && config.baseUrl && config.model && config.token
 })
 
-const loadConfig = () => {
-  // 使用 LLMVisionService 的统一配置加载方法
-  const config = LLMVisionService.getConfig()
+const handleProviderChange = (provider: 'openai' | 'gemini') => {
+  // 保存选择的服务商
+  LLMVisionService.saveLastSelectedProvider(provider)
+
+  // 当服务商改变时，加载对应提供商的配置
+  const config = LLMVisionService.getProviderConfig(provider)
   if (config) {
     formData.baseUrl = config.baseUrl
     formData.model = config.model
     formData.token = config.token
+  } else {
+    // 如果目标提供商没有配置，重置表单并设置默认值
+    formData.baseUrl = ''
+    formData.model = ''
+    formData.token = ''
+    // 为当前提供商设置默认baseUrl
+    if (provider === 'gemini') {
+      formData.baseUrl = 'https://generativelanguage.googleapis.com'
+    } else {
+      formData.baseUrl = 'https://api.openai.com/v1'
+    }
+  }
+}
+
+const loadConfig = () => {
+  // 加载当前选择提供商的配置
+  const config = LLMVisionService.getProviderConfig(formData.provider)
+  if (config) {
+    formData.baseUrl = config.baseUrl
+    formData.model = config.model
+    formData.token = config.token
+    // formData.provider 已经通过选择器设置，不需要从配置加载
+  } else {
+    // 如果当前提供商没有配置，重置表单并设置默认值
+    formData.baseUrl = ''
+    formData.model = ''
+    formData.token = ''
+    // 为当前提供商设置默认baseUrl
+    if (formData.provider === 'gemini') {
+      formData.baseUrl = 'https://generativelanguage.googleapis.com'
+    } else {
+      formData.baseUrl = 'https://api.openai.com/v1'
+    }
   }
 }
 
@@ -192,11 +251,15 @@ const saveConfig = async () => {
     const config = {
       baseUrl: formData.baseUrl,
       model: formData.model,
-      token: formData.token
+      token: formData.token,
+      provider: formData.provider
     }
 
-    // 保存到本地存储
-    localStorage.setItem('llm-config', JSON.stringify(config))
+    // 保存到本地存储（按提供商分开保存）
+    LLMVisionService.saveProviderConfig(config)
+
+    // 保存最后选择的服务商
+    LLMVisionService.saveLastSelectedProvider(config.provider)
 
     // 应用配置
     LLMVisionService.setConfig(config)
@@ -214,7 +277,7 @@ const saveConfig = async () => {
 const clearConfig = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要清除LLM配置吗？这将删除所有已保存的设置。',
+      `确定要清除${formData.provider === 'gemini' ? 'Gemini' : 'OpenAI'}的LLM配置吗？这将删除当前服务商的所有设置。`,
       '确认清除',
       {
         confirmButtonText: '确定',
@@ -223,19 +286,21 @@ const clearConfig = async () => {
       }
     )
 
-    // 清除本地存储
-    localStorage.removeItem('llm-config')
+    // 清除当前提供商的配置
+    LLMVisionService.deleteProviderConfig(formData.provider)
 
-    // 重置表单
+    // 重置表单（保持当前提供商，清除其他字段）
     formData.baseUrl = ''
     formData.model = ''
     formData.token = ''
+    // provider字段保持不变
 
-    // 清除服务配置
+    // 清除当前服务配置
     LLMVisionService.setConfig({
       baseUrl: '',
       model: '',
-      token: ''
+      token: '',
+      provider: formData.provider
     })
 
     testResult.value = null
@@ -259,7 +324,8 @@ const testConnection = async () => {
     const testConfig = {
       baseUrl: formData.baseUrl,
       model: formData.model,
-      token: formData.token
+      token: formData.token,
+      provider: formData.provider
     }
 
     LLMVisionService.setConfig(testConfig)
