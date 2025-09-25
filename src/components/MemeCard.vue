@@ -90,10 +90,6 @@
 
     <!-- 信息区域 -->
     <div class="p-4">
-      <h3 class="font-semibold text-gray-800 mb-3 truncate" :title="meme.filename">
-        {{ meme.filename }}
-      </h3>
-
       <!-- OCR文字 -->
       <div v-if="meme.ocrText" class="mb-3">
         <div class="text-xs font-semibold text-green-600 uppercase mb-1">OCR识别</div>
@@ -106,12 +102,11 @@
       <div v-if="meme.aiDescription" class="mb-3">
         <div class="text-xs font-semibold text-blue-600 uppercase mb-1">AI分析</div>
         <div class="bg-blue-50 border-l-3 border-blue-400 p-2 rounded-r-lg text-sm text-gray-700 leading-relaxed">
-          {{ meme.aiDescription || '无描述' }}
+          <div class="line-clamp-2">{{ meme.aiDescription || '无描述' }}</div>
         </div>
       </div>
 
     </div>
-
   </div>
 </template>
 
@@ -279,6 +274,15 @@ const handleDelete = async () => {
 .meme-card {
   transition: all 0.2s ease;
   position: relative;
+}
+
+/* 文本截断样式 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meme-card.selection-mode {

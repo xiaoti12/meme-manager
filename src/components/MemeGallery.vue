@@ -196,6 +196,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { MemeData } from '@/types'
 import { useMemeStore } from '@/stores/meme'
+import { CategoryManager } from '@/utils/categoryManager'
 import {
   Close,
   Download,
@@ -310,10 +311,8 @@ const saveOcrEdit = async () => {
 }
 
 const getCategoryName = (category: string) => {
-  const categoryMap: Record<string, string> = {
-    default: '默认'
-  }
-  return categoryMap[category] || category
+  const categoryData = CategoryManager.getCategoryById(category)
+  return categoryData ? categoryData.name : category
 }
 
 const formatFileSize = (size: number) => {
