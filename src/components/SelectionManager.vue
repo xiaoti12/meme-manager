@@ -35,6 +35,15 @@
           {{ isMoving ? '移动中...' : '确认移动' }}
         </el-button>
 
+        <el-button
+          type="danger"
+          :disabled="isDeleting"
+          :loading="isDeleting"
+          @click="handleBatchDelete"
+        >
+          {{ isDeleting ? '删除中...' : '删除到回收站' }}
+        </el-button>
+
         <el-button @click="clearSelection">取消</el-button>
       </div>
     </div>
@@ -60,6 +69,7 @@ const emit = defineEmits<{
   'update:selectedIds': [ids: string[]]
   'selection-cleared': []
   'move-completed': [movedCount: number, targetCategoryName: string]
+  'delete-completed': [deletedCount: number]
 }>()
 
 // Store
@@ -68,6 +78,7 @@ const memeStore = useMemeStore()
 // 响应式数据
 const targetCategory = ref<string>('')
 const isMoving = ref(false)
+const isDeleting = ref(false)
 
 // 计算属性
 const isSelectionMode = computed(() => props.selectedIds.length > 0)
@@ -111,6 +122,38 @@ const handleBatchMove = async () => {
     // 用户取消操作
   } finally {
     isMoving.value = false
+  }
+}
+
+// 批量删除到回收站
+const handleBatchDelete = async () => {
+  if (props.selectedIds.length === 0) return
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${props.selectedIds.length} 张图片吗？\n\n删除的图片将被移到回收站，可以随时恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    isDeleting.value = true
+    const deletedCount = memeStore.removeMemes(props.selectedIds)
+
+    if (deletedCount > 0) {
+      ElMessage.success(`成功删除 ${deletedCount} 张图片到回收站`)
+      emit('delete-completed', deletedCount)
+      clearSelection()
+    } else {
+      ElMessage.warning('没有图片被删除，可能已经被删除或发生错误')
+    }
+  } catch (error) {
+    // 用户取消操作
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -215,6 +258,13 @@ onUnmounted(() => {
   .category-selector {
     min-width: 140px;
     flex: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .selection-actions {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 
