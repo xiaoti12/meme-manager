@@ -17,15 +17,6 @@
               >
                 ⚙️ LLM配置
               </el-button>
-              <!-- 开发模式调试按钮 -->
-              <div v-if="isDev" class="flex space-x-1">
-                <el-button size="small" type="info" @click="debugUpload">
-                  调试
-                </el-button>
-                <el-button size="small" type="danger" @click="clearData">
-                  清空数据
-                </el-button>
-              </div>
             </div>
           </div>
           <p class="text-gray-600">支持拖拽上传、粘贴上传，自动OCR识别文字，AI分析图片内容</p>
@@ -194,7 +185,6 @@ import { useMemeStore } from '@/stores/meme'
 import { useRouter } from 'vue-router'
 import { ImageProcessor } from '@/utils/image'
 import { UploadService, type ProcessingProgress } from '@/utils/uploadService'
-import { DebugUpload } from '@/utils/debugUpload'
 import MultiFileUpload from '@/components/MultiFileUpload.vue'
 import ServiceStatus from '@/components/ServiceStatus.vue'
 import LLMConfig from '@/components/LLMConfig.vue'
@@ -222,7 +212,6 @@ const showConfigDialog = ref(false)
 const categoryOptions = ref<Array<{ label: string; value: string; icon?: string }>>([])
 
 const hasMultipleFiles = computed(() => uploadedFiles.value.length > 1)
-const isDev = computed(() => import.meta.env.DEV)
 
 const beforeUpload = (file: File) => {
   const validation = ImageProcessor.validateImage(file)
@@ -481,17 +470,6 @@ const saveOcrEdit = async () => {
   }
 }
 
-// 开发模式调试功能
-const debugUpload = () => {
-  DebugUpload.checkServiceStatus()
-}
-
-const clearData = () => {
-  DebugUpload.clearStorageData()
-  // 重新加载页面或清空store数据
-  memeStore.loadFromStorage()
-  ElMessage.success('数据已清空！')
-}
 
 const handleConfigSaved = () => {
   showConfigDialog.value = false
