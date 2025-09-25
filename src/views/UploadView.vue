@@ -361,11 +361,11 @@ const handleUpload = async () => {
 }
 
 const handleAllCompleted = () => {
-  ElMessage.success('所有文件处理完成！')
-  // 等待一段时间后自动跳转到首页
+  ElMessage.success('所有文件已确认保存完成！')
+  // 用户确认保存后，等待一段时间再跳转到首页
   setTimeout(() => {
     router.push('/')
-  }, 2000)
+  }, 1500)
 }
 
 const handlePaste = async (event: ClipboardEvent) => {
