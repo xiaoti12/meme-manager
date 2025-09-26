@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <script src="/icon-data.js"></script>
-    <link rel="icon" id="app-icon" type="image/png" />
-    <script>
-      // 页面加载后设置图标
-      document.addEventListener('DOMContentLoaded', function() {
-        if (typeof APP_ICON_DATA !== 'undefined') {
-          document.getElementById('app-icon').href = APP_ICON_DATA;
-        }
-      });
-    </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>表情包管理器 - 智能识别 · 分类管理 · 快速搜索</title>
-    <meta name="description" content="智能表情包管理器，支持OCR文字识别、AI图片分析、分类管理和快速搜索功能" />
-    <meta name="keywords" content="表情包,meme,图片管理,OCR识别,AI分析,搜索" />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <script src="/icon-data.js"></script>
+  <link rel="icon" id="app-icon" type="image/png" />
+  <script>
+    // 页面加载后设置图标
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof APP_ICON_DATA !== 'undefined') {
+        document.getElementById('app-icon').href = APP_ICON_DATA;
+      }
+    });
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemeHub</title>
+  <meta name="description" content="MemeHub - 智能表情包管理中心，支持OCR文字识别、AI图片分析、分类管理和快速搜索功能" />
+  <meta name="keywords" content="表情包,meme,图片管理,OCR识别,AI分析,搜索" />
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

@@ -3,10 +3,10 @@
     <div class="container mx-auto px-4 py-6">
       <div class="text-center mb-6">
         <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
-          <img :src="iconUrl" alt="表情包管理器图标" class="w-12 h-12" />
-          表情包管理器
+          <img :src="iconUrl" alt="MemeHub图标" class="w-12 h-12" />
+          MemeHub
         </h1>
-        <p class="text-lg text-gray-600">智能识别 · 分类管理 · 快速搜索</p>
+        <p class="text-lg text-gray-600">智能识别 · 快速搜索 · 分类管理</p>
       </div>
 
       <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
