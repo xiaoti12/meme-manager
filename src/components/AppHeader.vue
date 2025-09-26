@@ -2,8 +2,9 @@
   <header class="header glass-effect backdrop-blur-custom card-shadow">
     <div class="container mx-auto px-4 py-6">
       <div class="text-center mb-6">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
-          🎭 表情包管理器
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
+          <img :src="iconUrl" alt="表情包管理器图标" class="w-12 h-12" />
+          表情包管理器
         </h1>
         <p class="text-lg text-gray-600">智能识别 · 分类管理 · 快速搜索</p>
       </div>
@@ -73,6 +74,15 @@ import { Search } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import type { CategoryType } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
+
+// 图标URL
+const iconUrl = computed(() => {
+  if (typeof window !== 'undefined' && (window as any).APP_ICON_DATA) {
+    return (window as any).APP_ICON_DATA
+  }
+  // 回退到默认图标
+  return 'BASE64_IMAGE_DATA_PLACEHOLDER'
+})
 
 const memeStore = useMemeStore()
 
