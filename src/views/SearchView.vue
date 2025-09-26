@@ -229,6 +229,7 @@ const categoryOptions = ref<Array<{ label: string; value: string; icon?: string 
 // 选择状态
 const selectedIds = ref<string[]>([])
 const isMultiSelectMode = ref(false)
+const selectAll = ref(false)
 
 // 选择模式（多选按钮激活或有选中项时自动激活）
 const selectionMode = computed(() => isMultiSelectMode.value || selectedIds.value.length > 0)
@@ -402,7 +403,7 @@ const handleDelete = async (meme: MemeData) => {
 
 // 工具函数
 const getCategoryType = (category: CategoryType) => {
-  const typeMap = {
+  const typeMap: Record<string, string> = {
     default: 'primary',
     all: 'info'
   }
@@ -410,7 +411,7 @@ const getCategoryType = (category: CategoryType) => {
 }
 
 const getCategoryLabel = (category: CategoryType) => {
-  const labelMap = {
+  const labelMap: Record<string, string> = {
     default: '默认',
     all: '全部'
   }
