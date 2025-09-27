@@ -9,12 +9,7 @@
             </div>
             <div class="flex items-center space-x-2">
               <ServiceStatus />
-              <el-button
-                type="info"
-                plain
-                size="small"
-                @click="showConfigDialog = true"
-              >
+              <el-button type="info" plain size="small" @click="showConfigDialog = true">
                 ⚙️ LLM配置
               </el-button>
             </div>
@@ -26,21 +21,13 @@
         </div>
 
         <!-- 文件上传区域 -->
-        <el-upload
-          ref="uploadRef"
-          class="upload-demo"
-          drag
-          :auto-upload="false"
-          :on-change="handleFileChange"
-          :before-upload="beforeUpload"
-          accept="image/*"
-          :show-file-list="false"
-          multiple
-          :limit="20"
-          :on-exceed="handleExceed"
-        >
+        <el-upload ref="uploadRef" class="upload-demo" drag :auto-upload="false" :on-change="handleFileChange"
+          :before-upload="beforeUpload" accept="image/*" :show-file-list="false" multiple :limit="20"
+          :on-exceed="handleExceed">
           <div class="upload-area" :class="{ 'drag-over': isDragOver }">
-            <el-icon class="text-6xl text-gray-400 mb-4"><UploadFilled /></el-icon>
+            <el-icon class="text-6xl text-gray-400 mb-4">
+              <UploadFilled />
+            </el-icon>
             <div class="text-lg text-gray-600 mb-2">将图片拖拽到此处，或点击上传</div>
             <div class="text-sm text-gray-400">支持 JPG、PNG、GIF、WebP 格式，单个文件不超过 10MB</div>
             <div class="text-xs text-gray-400 mt-2">一次最多上传 20 个文件</div>
@@ -50,45 +37,31 @@
         <!-- 分类选择 -->
         <div class="mt-8 mb-6">
           <label class="text-sm font-medium text-gray-700 mb-2 block">📂 选择分类</label>
-          <el-select
-            v-model="selectedCategory"
-            placeholder="请选择分类"
-            class="w-full"
-            clearable
-          >
-            <el-option
-              v-for="option in categoryOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            >
+          <el-select v-model="selectedCategory" placeholder="请选择分类" class="w-full" clearable>
+            <el-option v-for="option in categoryOptions" :key="option.value" :label="option.label"
+              :value="option.value">
               <span>{{ option.label }}</span>
             </el-option>
           </el-select>
         </div>
 
         <!-- 多文件上传组件 -->
-        <MultiFileUpload
-          ref="multiFileUploadRef"
-          :selected-category="selectedCategory"
-          @all-completed="handleAllCompleted"
-        />
+        <MultiFileUpload ref="multiFileUploadRef" :selected-category="selectedCategory"
+          @all-completed="handleAllCompleted" />
 
         <!-- 单文件预览区域（保留兼容性） -->
         <div v-if="previewFile && !hasMultipleFiles" class="mt-8">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">📷 图片预览</h3>
           <div class="bg-gray-50 rounded-xl p-4 mb-6">
-            <img
-              :src="previewUrl"
-              :alt="previewFile.name"
-              class="max-w-full max-h-64 mx-auto rounded-lg shadow-md"
-            />
+            <img :src="previewUrl" :alt="previewFile.name" class="max-w-full max-h-64 mx-auto rounded-lg shadow-md" />
           </div>
 
           <!-- 处理状态 -->
           <div v-if="processing" class="mb-6">
             <div class="text-center py-8">
-              <el-icon class="text-4xl text-primary-500 animate-spin mb-4"><Loading /></el-icon>
+              <el-icon class="text-4xl text-primary-500 animate-spin mb-4">
+                <Loading />
+              </el-icon>
               <div class="text-lg text-gray-700 mb-2">正在处理图片...</div>
               <div class="text-sm text-gray-500">{{ processingMessage }}</div>
               <el-progress :percentage="processingProgress" class="mt-4" />
@@ -100,14 +73,11 @@
             <div v-if="ocrResult || editingOcr" class="bg-green-50 border border-green-200 rounded-lg p-4">
               <div class="flex items-center justify-between mb-2">
                 <div class="text-sm font-semibold text-green-700">✍️ OCR识别结果</div>
-                <el-button
-                  v-if="!editingOcr"
-                  size="small"
-                  type="text"
-                  @click="startEditOcr"
-                  :title="ocrResult ? '编辑OCR结果' : '添加OCR内容'"
-                >
-                  <el-icon><Edit /></el-icon>
+                <el-button v-if="!editingOcr" size="small" type="text" @click="startEditOcr"
+                  :title="ocrResult ? '编辑OCR结果' : '添加OCR内容'">
+                  <el-icon>
+                    <Edit />
+                  </el-icon>
                 </el-button>
               </div>
 
@@ -118,26 +88,13 @@
 
               <!-- 编辑模式 -->
               <div v-else class="space-y-3">
-                <el-input
-                  v-model="editingOcrText"
-                  type="textarea"
-                  :rows="3"
-                  placeholder="输入OCR识别文字..."
-                  @keydown.enter.ctrl="saveOcrEdit"
-                  @keydown.esc="cancelOcrEdit"
-                />
+                <el-input v-model="editingOcrText" type="textarea" :rows="3" placeholder="输入OCR识别文字..."
+                  @keydown.enter.ctrl="saveOcrEdit" @keydown.esc="cancelOcrEdit" />
                 <div class="flex justify-end space-x-2">
-                  <el-button
-                    size="small"
-                    @click="cancelOcrEdit"
-                  >
+                  <el-button size="small" @click="cancelOcrEdit">
                     取消
                   </el-button>
-                  <el-button
-                    size="small"
-                    type="primary"
-                    @click="saveOcrEdit"
-                  >
+                  <el-button size="small" type="primary" @click="saveOcrEdit">
                     保存
                   </el-button>
                 </div>
@@ -155,13 +112,8 @@
           <!-- 操作按钮 -->
           <div class="flex gap-4 justify-center">
             <el-button size="large" @click="resetForm">重新选择</el-button>
-            <el-button
-              type="primary"
-              size="large"
-              :loading="processing"
-              :disabled="!selectedCategory"
-              @click="handleUpload"
-            >
+            <el-button type="primary" size="large" :loading="processing" :disabled="!selectedCategory"
+              @click="handleUpload">
               {{ processing ? '处理中...' : '确认上传' }}
             </el-button>
           </div>
@@ -252,6 +204,7 @@ const handleFileChange = (file: any, fileList: any[]) => {
     previewUrl.value = ''
     // 添加文件到多文件上传组件
     if (multiFileUploadRef.value) {
+      multiFileUploadRef.value.clearQueue()
       multiFileUploadRef.value.addFiles(files)
     }
   }
@@ -277,7 +230,7 @@ const processImage = async (file: File) => {
         processingMessage.value = progress.message
 
         // 如果是单文件模式，实时更新OCR和AI结果
-        if (progress.stage === 'ocr' && progress.progress >= 70) {
+        if (progress.stage === 'analyzing' && progress.progress >= 70) {
           // 这里可以获取中间结果，但UploadService没有直接提供
           // 所以我们等待完成后再更新
         }
