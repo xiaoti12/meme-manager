@@ -25,7 +25,7 @@ export type CategoryType = 'all' | 'default' | string
 
 export type SortType = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 
-export type ViewMode = 'grid' | 'list'
+export type ViewMode = 'grid' | 'list' | 'compact'
 
 export interface UploadProgress {
   status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error'

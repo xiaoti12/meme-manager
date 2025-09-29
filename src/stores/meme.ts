@@ -12,7 +12,7 @@ export const useMemeStore = defineStore('meme', () => {
   })
   const loading = ref(false)
   const sortBy = ref<string>('date-desc')
-  const viewMode = ref<'grid' | 'list'>('grid')
+  const viewMode = ref<'grid' | 'list' | 'compact'>('grid')
 
   // Fuse.js 搜索实例
   let fuseInstance: Fuse<MemeData> | null = null
@@ -365,7 +365,7 @@ export const useMemeStore = defineStore('meme', () => {
   }
 
   // 设置视图模式
-  const setViewMode = (mode: 'grid' | 'list') => {
+  const setViewMode = (mode: 'grid' | 'list' | 'compact') => {
     viewMode.value = mode
   }
 

@@ -8,6 +8,26 @@
       </div>
 
       <div v-if="memes.length > 0" class="flex items-center gap-2">
+        <!-- 视图模式切换 -->
+        <el-button-group>
+          <el-button
+            :type="memeStore.viewMode === 'grid' ? 'primary' : 'default'"
+            size="small"
+            @click="memeStore.setViewMode('grid')"
+            title="详细网格视图"
+          >
+            完整
+          </el-button>
+          <el-button
+            :type="memeStore.viewMode === 'compact' ? 'primary' : 'default'"
+            size="small"
+            @click="memeStore.setViewMode('compact')"
+            title="紧凑网格视图"
+          >
+            紧凑
+          </el-button>
+        </el-button-group>
+
         <el-button
           :type="isMultiSelectMode ? 'danger' : 'primary'"
           size="small"
@@ -30,11 +50,35 @@
       </div>
     </div>
 
+    <!-- 详细网格视图 -->
     <div
+      v-if="memeStore.viewMode === 'grid'"
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6"
       @click.stop
     >
       <MemeCard
+        v-for="(meme, index) in memes"
+        :key="meme.id"
+        :meme="meme"
+        :selection-mode="selectionMode"
+        :is-selected="selectedIds.includes(meme.id)"
+        :is-multi-select-mode="isMultiSelectMode"
+        @download="handleDownload"
+        @copy="handleCopy"
+        @delete="handleDelete"
+        @gallery="openGallery(index)"
+        @toggle-selection="toggleSelection"
+        @long-press-select="handleLongPressSelect"
+      />
+    </div>
+
+    <!-- 紧凑网格视图 -->
+    <div
+      v-else-if="memeStore.viewMode === 'compact'"
+      class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5 sm:gap-2 md:gap-3"
+      @click.stop
+    >
+      <MemeCardCompact
         v-for="(meme, index) in memes"
         :key="meme.id"
         :meme="meme"
@@ -66,9 +110,10 @@
 import { ref } from 'vue'
 import type { MemeData, CategoryType } from '@/types'
 import MemeCard from './MemeCard.vue'
+import MemeCardCompact from './MemeCardCompact.vue'
 import MemeGallery from './MemeGallery.vue'
 import { ElMessage } from 'element-plus'
-import { FullScreen, Select } from '@element-plus/icons-vue'
+import { FullScreen, Select, Grid, List } from '@element-plus/icons-vue'
 import { copyImageToClipboard } from '@/utils/clipboard'
 import { useMemeStore } from '@/stores/meme'
 
