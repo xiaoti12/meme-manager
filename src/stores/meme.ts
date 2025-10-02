@@ -446,6 +446,110 @@ export const useMemeStore = defineStore('meme', () => {
     }
   }
 
+  // WebDAV 同步相关方法
+  const syncToWebDAV = async () => {
+    const { createWebDAVService, getLLMConfigs } = await import('@/utils/webdavService')
+    const service = createWebDAVService()
+
+    if (!service) {
+      throw new Error('WebDAV 服务未配置或未启用')
+    }
+
+    try {
+      const llmConfigs = getLLMConfigs()
+      await service.uploadData(memes.value, CategoryManager.getCategories(), llmConfigs || undefined)
+
+      const configInfo = llmConfigs ? `，包含 LLM 配置` : ''
+      return {
+        success: true,
+        message: `数据已成功上传到云端${configInfo}`,
+        timestamp: new Date()
+      }
+    } catch (error) {
+      throw new Error(`WebDAV 上传失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
+  const syncFromWebDAV = async () => {
+    const { createWebDAVService, saveLLMConfigs } = await import('@/utils/webdavService')
+    const service = createWebDAVService()
+
+    if (!service) {
+      throw new Error('WebDAV 服务未配置或未启用')
+    }
+
+    try {
+      const syncData = await service.downloadData()
+
+      // 构造兼容的导入数据格式
+      const importDataFormatted = {
+        memes: syncData.memes,
+        categories: syncData.categories,
+        exportDate: new Date(syncData.exportDate),
+        version: syncData.version
+      }
+
+      const success = importData(importDataFormatted)
+      if (!success) {
+        throw new Error('数据导入失败')
+      }
+
+      // 如果有 LLM 配置，也同时导入
+      let llmConfigInfo = ''
+      if (syncData.llmConfigs) {
+        try {
+          saveLLMConfigs(syncData.llmConfigs)
+          const configCount = (syncData.llmConfigs.openai ? 1 : 0) + (syncData.llmConfigs.gemini ? 1 : 0)
+          llmConfigInfo = `，${configCount} 个 LLM 配置`
+        } catch (error) {
+          console.warn('LLM 配置导入失败:', error)
+          llmConfigInfo = '，LLM 配置导入失败'
+        }
+      }
+
+      return {
+        success: true,
+        message: `已从云端下载 ${syncData.memes.length} 个表情包和 ${syncData.categories.length} 个分类${llmConfigInfo}`,
+        timestamp: new Date(),
+        data: {
+          memeCount: syncData.memes.length,
+          categoryCount: syncData.categories.length,
+          llmConfigCount: syncData.llmConfigs ? (syncData.llmConfigs.openai ? 1 : 0) + (syncData.llmConfigs.gemini ? 1 : 0) : 0
+        }
+      }
+    } catch (error) {
+      throw new Error(`WebDAV 下载失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
+  const checkWebDAVSync = async () => {
+    const { createWebDAVService } = await import('@/utils/webdavService')
+    const service = createWebDAVService()
+
+    if (!service) {
+      return {
+        configured: false,
+        fileExists: false,
+        message: 'WebDAV 未配置'
+      }
+    }
+
+    try {
+      const fileExists = await service.checkFileExists()
+      return {
+        configured: true,
+        fileExists,
+        message: fileExists ? '云端同步文件存在' : '云端同步文件不存在'
+      }
+    } catch (error) {
+      return {
+        configured: true,
+        fileExists: false,
+        message: `检查失败: ${error instanceof Error ? error.message : '未知错误'}`
+      }
+    }
+  }
+
   // 导入数据
   const importData = (data: any) => {
     try {
@@ -610,6 +714,11 @@ export const useMemeStore = defineStore('meme', () => {
     saveSettings,
     exportData,
     importData,
+
+    // WebDAV 同步方法
+    syncToWebDAV,
+    syncFromWebDAV,
+    checkWebDAVSync,
 
     // 工具方法
     initMockData,

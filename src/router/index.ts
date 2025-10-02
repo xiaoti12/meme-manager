@@ -28,6 +28,11 @@ const router = createRouter({
       path: '/trash',
       name: 'trash',
       component: () => import('@/views/TrashView.vue')
+    },
+    {
+      path: '/data-sync',
+      name: 'data-sync',
+      component: () => import('@/views/DataSyncView.vue')
     }
   ]
 })

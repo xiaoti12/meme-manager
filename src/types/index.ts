@@ -66,3 +66,32 @@ export interface MemeSettings {
   autoSave: boolean
   enableFuzzySearch: boolean
 }
+
+export interface WebDAVConfig {
+  enabled: boolean
+  url: string
+  username: string
+  password: string
+  useProxy?: boolean
+}
+
+export interface LLMConfig {
+  baseUrl: string
+  model: string
+  token: string
+  provider: 'openai' | 'gemini'
+}
+
+export interface LLMConfigs {
+  openai?: LLMConfig
+  gemini?: LLMConfig
+  lastSelectedProvider?: 'openai' | 'gemini'
+}
+
+export interface SyncData {
+  memes: MemeData[]
+  categories: Category[]
+  llmConfigs?: LLMConfigs
+  exportDate: string
+  version: string
+}

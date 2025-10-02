@@ -62,6 +62,10 @@
           :class="{ 'bg-orange-500 text-white': $route.name === 'trash' }">
           回收站
         </router-link>
+        <router-link to="/data-sync" class="px-4 py-2 rounded-lg transition-colors hover:bg-primary-100"
+          :class="{ 'bg-blue-500 text-white': $route.name === 'data-sync' }">
+          数据同步
+        </router-link>
       </div>
 
     </div>

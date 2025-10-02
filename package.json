@@ -15,7 +15,8 @@
     "fuse.js": "^6.6.0",
     "pinia": "^2.1.0",
     "vue": "^3.3.0",
-    "vue-router": "^4.2.0"
+    "vue-router": "^4.2.0",
+    "webdav": "^5.8.0"
   },
   "devDependencies": {
     "@types/node": "^18.16.0",

@@ -42,12 +42,11 @@
               📤 上传图片
             </el-button>
           </router-link>
-          <el-button size="large" round @click="exportAllData">
-            📦 导出数据
-          </el-button>
-          <el-button size="large" round @click="importData">
-            📥 导入数据
-          </el-button>
+          <router-link to="/data-sync">
+            <el-button size="large" round class="hover-lift">
+              📦 数据同步
+            </el-button>
+          </router-link>
         </div>
       </div>
     </div>
@@ -129,68 +128,6 @@ const categoriesToDisplay = computed(() => {
 })
 
 
-// 导出所有数据
-const exportAllData = () => {
-  const exportData = memeStore.exportData()
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `memes-backup-${new Date().toISOString().split('T')[0]}.json`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-
-  // 显示详细的导出信息
-  ElMessage.success(`已导出 ${exportData.memes.length} 个表情包和 ${exportData.categories.length} 个分类`)
-  console.log('导出数据详情:', {
-    memeCount: exportData.memes.length,
-    categoryCount: exportData.categories.length,
-    version: exportData.version,
-    exportDate: exportData.exportDate
-  })
-}
-
-// 导入数据
-const importData = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.json'
-  input.onchange = (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target?.result as string)
-
-          // 验证导入数据的基本信息
-          console.log('导入数据信息:', {
-            hasMemes: !!data.memes,
-            memeCount: data.memes?.length || 0,
-            hasCategories: !!data.categories,
-            categoryCount: data.categories?.length || 0,
-            version: data.version || 'unknown'
-          })
-
-          if (memeStore.importData(data)) {
-            const memeCount = data.memes?.length || 0
-            const categoryCount = data.categories?.length || 0
-            ElMessage.success(`数据导入成功！导入了 ${memeCount} 个表情包和 ${categoryCount} 个分类`)
-          } else {
-            ElMessage.error('数据格式错误或导入失败')
-          }
-        } catch (error) {
-          console.error('导入文件解析错误:', error)
-          ElMessage.error('文件解析失败，请检查文件格式')
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
-  input.click()
-}
 
 // 切换选择状态
 const toggleSelection = (memeId: string) => {
