@@ -11,25 +11,15 @@
     <!-- 表情包分类展示 -->
     <div v-else-if="!isLoading && memeStore.filteredMemes.length > 0 && validCategories.length > 0" class="space-y-12">
       <!-- 动态分类 -->
-      <CategorySection
-        v-for="categoryItem in categoriesToDisplay"
-        :key="categoryItem.id"
-        :title="categoryItem.name"
-        :memes="memeStore.memesByCategory[categoryItem.id]"
-        :category="categoryItem.id"
-        :selection-mode="selectionMode"
-        :selected-ids="selectedIds"
-        :is-multi-select-mode="isMultiSelectMode"
-        @toggle-selection="toggleSelection"
-        @long-press-select="handleLongPressSelect"
-        @toggle-multi-select="toggleMultiSelectMode"
-      />
+      <CategorySection v-for="categoryItem in categoriesToDisplay" :key="categoryItem.id" :title="categoryItem.name"
+        :memes="memeStore.memesByCategory[categoryItem.id]" :category="categoryItem.id" :selection-mode="selectionMode"
+        :selected-ids="selectedIds" :is-multi-select-mode="isMultiSelectMode" @toggle-selection="toggleSelection"
+        @long-press-select="handleLongPressSelect" @toggle-multi-select="toggleMultiSelectMode" />
     </div>
 
     <!-- 空状态 -->
     <div v-else class="text-center py-16">
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-12 card-shadow max-w-md mx-auto">
-        <div class="text-6xl mb-6">🎭</div>
         <h3 class="text-xl font-semibold text-gray-700 mb-4">还没有表情包</h3>
         <p class="text-gray-500 mb-8">开始上传你的第一个表情包吧！</p>
         <router-link to="/upload">
@@ -63,11 +53,8 @@
     </div>
 
     <!-- 选择管理器 -->
-    <SelectionManager
-      v-model:selected-ids="selectedIds"
-      @selection-cleared="clearSelection"
-      @move-completed="handleMoveCompleted"
-    />
+    <SelectionManager v-model:selected-ids="selectedIds" @selection-cleared="clearSelection"
+      @move-completed="handleMoveCompleted" />
   </div>
 </template>
 
