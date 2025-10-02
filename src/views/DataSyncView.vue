@@ -95,22 +95,6 @@
               </div>
             </div>
 
-            <!-- 云端文件状态 -->
-            <div v-if="webdavEnabled" class="p-4 bg-blue-50 rounded-lg">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium text-gray-700">云端文件状态</p>
-                  <p class="text-sm text-gray-500">{{ cloudFileStatus }}</p>
-                </div>
-                <el-button
-                  size="small"
-                  @click="checkCloudFile"
-                  :loading="checkingFile"
-                >
-                  🔍 检查
-                </el-button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -147,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
@@ -164,7 +148,6 @@ const exporting = ref(false)
 const importing = ref(false)
 const uploading = ref(false)
 const downloading = ref(false)
-const checkingFile = ref(false)
 
 // 数据状态
 const webdavEnabled = computed(() => {
@@ -172,8 +155,6 @@ const webdavEnabled = computed(() => {
   return config?.enabled || false
 })
 
-// 云端文件状态
-const cloudFileStatus = ref('未检查')
 
 // 操作历史
 const operationHistory = ref<Array<{
@@ -283,9 +264,6 @@ const uploadToWebDAV = async () => {
 
     ElMessage.success(result.message)
     addOperationRecord('WebDAV 上传数据', true, result.message)
-
-    // 更新云端文件状态
-    cloudFileStatus.value = '已更新'
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     ElMessage.error(`上传失败：${errorMessage}`)
@@ -333,43 +311,7 @@ const downloadFromWebDAV = async () => {
   }
 }
 
-// 检查云端文件
-const checkCloudFile = async () => {
-  if (!webdavEnabled.value) {
-    return
-  }
 
-  checkingFile.value = true
-
-  try {
-    const service = createWebDAVService()
-    if (!service) {
-      throw new Error('WebDAV 服务未正确配置')
-    }
-
-    const exists = await service.checkFileExists()
-    cloudFileStatus.value = exists ? '文件存在' : '文件不存在'
-
-    if (exists) {
-      ElMessage.success('云端同步文件存在')
-    } else {
-      ElMessage.info('云端同步文件不存在，可以上传数据')
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误'
-    cloudFileStatus.value = `检查失败：${errorMessage}`
-    ElMessage.error(`检查失败：${errorMessage}`)
-  } finally {
-    checkingFile.value = false
-  }
-}
-
-// 组件挂载时检查云端文件状态
-onMounted(() => {
-  if (webdavEnabled.value) {
-    checkCloudFile()
-  }
-})
 </script>
 
 <style scoped>
