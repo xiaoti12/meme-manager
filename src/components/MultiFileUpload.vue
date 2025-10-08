@@ -11,19 +11,15 @@
             第 {{ currentImageIndex + 1 }} / {{ completedFiles.length }} 张图片
           </div>
           <div class="flex space-x-2">
-            <el-button
-              size="small"
-              @click="previousImage"
-              :disabled="completedFiles.length <= 1"
-            >
-              <el-icon><ArrowLeft /></el-icon>
+            <el-button size="small" @click="previousImage" :disabled="completedFiles.length <= 1">
+              <el-icon>
+                <ArrowLeft />
+              </el-icon>
             </el-button>
-            <el-button
-              size="small"
-              @click="nextImage"
-              :disabled="completedFiles.length <= 1"
-            >
-              <el-icon><ArrowRight /></el-icon>
+            <el-button size="small" @click="nextImage" :disabled="completedFiles.length <= 1">
+              <el-icon>
+                <ArrowRight />
+              </el-icon>
             </el-button>
           </div>
         </div>
@@ -33,11 +29,8 @@
           <div class="flex flex-col lg:flex-row gap-6">
             <!-- 图片预览 -->
             <div class="flex-shrink-0">
-              <img
-                :src="currentFile.previewUrl"
-                :alt="currentFile.file.name"
-                class="w-full lg:w-80 h-64 object-cover rounded-lg shadow-md"
-              />
+              <img :src="currentFile.previewUrl" :alt="currentFile.file.name"
+                class="w-full lg:w-80 h-64 object-cover rounded-lg shadow-md" />
               <div class="mt-2 text-center text-sm text-gray-600">
                 {{ currentFile.file.name }} ({{ formatFileSize(currentFile.file.size) }})
               </div>
@@ -47,13 +40,11 @@
             <div class="flex-1">
               <div class="flex items-center justify-between mb-3">
                 <h4 class="text-lg font-semibold text-green-600">✍️ OCR识别结果</h4>
-                <el-button
-                  v-if="!currentFile.editingOcr"
-                  size="small"
-                  type="primary"
-                  @click="startEditOcr(currentFile)"
-                >
-                  <el-icon class="mr-1"><Edit /></el-icon>
+                <el-button v-if="!currentFile.editingOcr" size="small" type="primary"
+                  @click="startEditOcr(currentFile)">
+                  <el-icon class="mr-1">
+                    <Edit />
+                  </el-icon>
                   编辑
                 </el-button>
               </div>
@@ -70,13 +61,8 @@
 
               <!-- 编辑模式 -->
               <div v-else class="space-y-4">
-                <el-input
-                  v-model="currentFile.editingOcrText"
-                  type="textarea"
-                  :rows="6"
-                  placeholder="输入OCR识别文字..."
-                  class="w-full"
-                />
+                <el-input v-model="currentFile.editingOcrText" type="textarea" :rows="6" placeholder="输入OCR识别文字..."
+                  class="w-full" />
                 <div class="flex justify-end space-x-2">
                   <el-button @click="cancelEditOcr(currentFile)">
                     取消
@@ -99,49 +85,44 @@
 
       <!-- 处理中或待处理的网格视图 -->
       <div v-else :class="gridClass">
-        <div
-          v-for="(fileItem, index) in fileQueue"
-          :key="index"
-          class="file-card bg-white rounded-xl shadow-sm border transition-all duration-300 hover:shadow-md"
-          :class="{
+        <div v-for="(fileItem, index) in fileQueue" :key="index"
+          class="file-card bg-white rounded-xl shadow-sm border transition-all duration-300 hover:shadow-md" :class="{
             'border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100': fileItem.status === 'processing',
             'border-green-300 bg-gradient-to-br from-green-50 to-green-100': fileItem.status === 'completed',
             'border-red-300 bg-gradient-to-br from-red-50 to-red-100': fileItem.status === 'error',
             'border-gray-200 hover:border-gray-300': fileItem.status === 'pending'
-          }"
-        >
+          }">
           <!-- 图片预览区域 -->
           <div class="relative">
-            <img
-              :src="fileItem.previewUrl"
-              :alt="fileItem.file.name"
-              class="w-full h-32 object-cover rounded-t-xl"
-            />
+            <img :src="fileItem.previewUrl" :alt="fileItem.file.name" class="w-full h-32 object-cover rounded-t-xl" />
             <!-- 删除按钮 -->
-            <el-button
-              v-if="fileItem.status !== 'processing'"
-              size="small"
-              type="danger"
-              :icon="Delete"
-              circle
-              class="absolute top-2 right-2 shadow-lg"
-              @click="removeFile(index)"
-            />
+            <el-button v-if="fileItem.status !== 'processing'" size="small" type="danger" :icon="Delete" circle
+              class="absolute top-2 right-2 shadow-lg" @click="removeFile(index)" />
             <!-- 状态徽章 -->
             <div class="absolute bottom-2 left-2">
-              <div v-if="fileItem.status === 'pending'" class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                <el-icon class="mr-1 text-xs"><Clock /></el-icon>
+              <div v-if="fileItem.status === 'pending'"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                <el-icon class="mr-1 text-xs">
+                  <Clock />
+                </el-icon>
                 等待处理
               </div>
-              <div v-else-if="fileItem.status === 'processing'" class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
+              <div v-else-if="fileItem.status === 'processing'"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
                 处理中...
               </div>
-              <div v-else-if="fileItem.status === 'completed'" class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                <el-icon class="mr-1 text-xs"><Check /></el-icon>
+              <div v-else-if="fileItem.status === 'completed'"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                <el-icon class="mr-1 text-xs">
+                  <Check />
+                </el-icon>
                 已完成
               </div>
-              <div v-else-if="fileItem.status === 'error'" class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
-                <el-icon class="mr-1 text-xs"><Close /></el-icon>
+              <div v-else-if="fileItem.status === 'error'"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                <el-icon class="mr-1 text-xs">
+                  <Close />
+                </el-icon>
                 错误
               </div>
             </div>
@@ -173,26 +154,18 @@
       <!-- 批量操作按钮 -->
       <div class="flex justify-center mt-6 space-x-4">
         <el-button @click="clearQueue" :disabled="isProcessing">清空队列</el-button>
-        <el-button
-          v-if="!allProcessed"
-          type="primary"
-          @click="startBatchProcessing"
-          :loading="isProcessing"
-          :disabled="fileQueue.length === 0"
-        >
+        <el-button v-if="!allProcessed" type="primary" @click="startBatchProcessing" :loading="isProcessing"
+          :disabled="fileQueue.length === 0">
           {{ isProcessing ? '处理中...' : '开始批量处理' }}
         </el-button>
 
         <!-- 处理完成后显示确认保存按钮 -->
         <div v-if="allProcessed" class="flex space-x-4">
-          <el-button
-            type="success"
-            size="large"
-            @click="confirmSaveAll"
-            :disabled="!hasCompletedFiles"
-          >
-            <el-icon class="mr-2"><Check /></el-icon>
-            全部确认保存 ({{ fileQueue.filter(item => item.status === 'completed').length }})
+          <el-button type="success" size="large" @click="confirmSaveAll" :disabled="!hasCompletedFiles">
+            <el-icon class="mr-2">
+              <Check />
+            </el-icon>
+            全部确认保存 ({{fileQueue.filter(item => item.status === 'completed').length}})
           </el-button>
           <el-button @click="continueUploading">继续添加文件</el-button>
         </div>
