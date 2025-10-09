@@ -9,7 +9,7 @@
 
 
       <!-- WebDAV 配置 -->
-      <WebDAVConfig ref="webdavConfigRef" />
+      <WebDAVConfig ref="webdavConfigRef" @config-saved="handleWebDAVConfigSaved" />
 
       <!-- 数据操作 -->
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
@@ -161,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
@@ -185,10 +185,7 @@ const localImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
 const webdavImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
 
 // 数据状态
-const webdavEnabled = computed(() => {
-  const config = getWebDAVConfig()
-  return config?.enabled || false
-})
+const webdavEnabled = ref(false)
 
 
 // 操作历史
@@ -199,6 +196,12 @@ const operationHistory = ref<Array<{
   details?: string
 }>>([])
 
+
+// 刷新WebDAV状态
+const refreshWebDAVStatus = () => {
+  const config = getWebDAVConfig()
+  webdavEnabled.value = config?.enabled || false
+}
 
 // 格式化时间
 const formatTime = (date: Date): string => {
@@ -352,6 +355,16 @@ const downloadFromWebDAV = async () => {
     downloading.value = false
   }
 }
+
+// 处理WebDAV配置保存事件
+const handleWebDAVConfigSaved = () => {
+  refreshWebDAVStatus()
+}
+
+// 组件挂载时初始化WebDAV状态
+onMounted(() => {
+  refreshWebDAVStatus()
+})
 
 
 </script>

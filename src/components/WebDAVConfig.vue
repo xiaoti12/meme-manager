@@ -121,6 +121,11 @@ import { Link, User, Lock } from '@element-plus/icons-vue'
 import type { WebDAVConfig } from '@/types'
 import { getWebDAVConfig, saveWebDAVConfig, WebDAVService } from '@/utils/webdavService'
 
+// 定义事件
+const emit = defineEmits<{
+  'config-saved': []
+}>()
+
 // 本地配置状态
 const localConfig = ref<WebDAVConfig>({
   enabled: false,
@@ -159,6 +164,14 @@ const handleEnabledChange = () => {
     ElMessage.info('已启用 WebDAV 同步，请配置服务器信息')
   } else {
     ElMessage.info('已禁用 WebDAV 同步')
+  }
+
+  // 自动保存启用状态的变化并通知父组件
+  try {
+    saveWebDAVConfig(localConfig.value)
+    emit('config-saved')
+  } catch (error) {
+    console.error('自动保存配置失败:', error)
   }
 }
 
@@ -220,6 +233,9 @@ const saveConfig = () => {
     saveWebDAVConfig(localConfig.value)
     ElMessage.success('WebDAV 配置已保存')
     connectionStatus.value = null // 清除之前的连接状态
+
+    // 发送配置保存事件通知父组件
+    emit('config-saved')
   } catch (error) {
     ElMessage.error('保存配置失败')
   }
