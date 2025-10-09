@@ -13,6 +13,10 @@
     {
       "source": "/api/webdav-proxy",
       "destination": "/api/webdav-proxy.js"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
