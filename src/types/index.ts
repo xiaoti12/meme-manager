@@ -34,6 +34,11 @@ export type SortType = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'si
 
 export type ViewMode = 'grid' | 'list' | 'compact'
 
+export enum ImportMode {
+  OVERWRITE = 'overwrite',  // 覆盖模式
+  MERGE = 'merge'           // 合并模式
+}
+
 export interface UploadProgress {
   status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error'
   progress: number

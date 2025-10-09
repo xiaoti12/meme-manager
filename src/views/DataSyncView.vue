@@ -52,6 +52,21 @@
                   📥 导入
                 </el-button>
               </div>
+              <!-- 导入模式选择 -->
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-600 mb-2">导入模式：</p>
+                <el-radio-group v-model="localImportMode" size="small">
+                  <el-radio value="overwrite" class="mr-4">
+                    <span class="text-sm">覆盖模式</span>
+                  </el-radio>
+                  <el-radio value="merge">
+                    <span class="text-sm">合并模式</span>
+                  </el-radio>
+                </el-radio-group>
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ localImportMode === 'overwrite' ? '完全替换现有数据' : '智能合并到现有数据中' }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -92,6 +107,21 @@
                 >
                   📥 下载
                 </el-button>
+              </div>
+              <!-- 下载模式选择 -->
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-600 mb-2">下载模式：</p>
+                <el-radio-group v-model="webdavImportMode" size="small">
+                  <el-radio value="overwrite" class="mr-4">
+                    <span class="text-sm">覆盖模式</span>
+                  </el-radio>
+                  <el-radio value="merge">
+                    <span class="text-sm">合并模式</span>
+                  </el-radio>
+                </el-radio-group>
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ webdavImportMode === 'overwrite' ? '完全替换现有数据' : '智能合并到现有数据中' }}
+                </p>
               </div>
             </div>
 
@@ -136,6 +166,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
 import WebDAVConfig from '@/components/WebDAVConfig.vue'
+import { ImportMode } from '@/types'
 
 // Store
 const memeStore = useMemeStore()
@@ -148,6 +179,10 @@ const exporting = ref(false)
 const importing = ref(false)
 const uploading = ref(false)
 const downloading = ref(false)
+
+// 导入模式状态
+const localImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
+const webdavImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
 
 // 数据状态
 const webdavEnabled = computed(() => {
@@ -226,12 +261,13 @@ const importData = () => {
         try {
           const data = JSON.parse(event.target?.result as string)
 
-          if (memeStore.importData(data)) {
+          if (memeStore.importDataWithMode(data, localImportMode.value)) {
             const memeCount = data.memes?.length || 0
             const categoryCount = data.categories?.length || 0
             const details = `${memeCount}个表情包，${categoryCount}个分类`
-            ElMessage.success(`数据导入成功！${details}`)
-            addOperationRecord('本地导入数据', true, details)
+            const modeText = localImportMode.value === 'overwrite' ? '覆盖' : '合并'
+            ElMessage.success(`数据${modeText}导入成功！${details}`)
+            addOperationRecord(`本地${modeText}导入数据`, true, details)
           } else {
             ElMessage.error('数据格式错误或导入失败')
             addOperationRecord('本地导入数据', false, '数据格式错误')
@@ -282,9 +318,14 @@ const downloadFromWebDAV = async () => {
 
   // 确认操作
   try {
+    const modeText = webdavImportMode.value === 'overwrite' ? '覆盖' : '合并到'
+    const actionText = webdavImportMode.value === 'overwrite'
+      ? '下载云端数据将会完全覆盖本地数据，包括表情包、分类和LLM配置'
+      : '下载云端数据将会合并到本地数据中，相同ID的数据会被更新，LLM配置会被覆盖'
+
     await ElMessageBox.confirm(
-      '下载云端数据将会覆盖本地数据，包括表情包、分类和LLM配置，是否继续？',
-      '确认下载',
+      `${actionText}，是否继续？`,
+      `确认${modeText}下载`,
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -298,10 +339,11 @@ const downloadFromWebDAV = async () => {
   downloading.value = true
 
   try {
-    const result = await memeStore.syncFromWebDAV()
+    const result = await memeStore.syncFromWebDAV(webdavImportMode.value)
 
     ElMessage.success(result.message)
-    addOperationRecord('WebDAV 下载数据', true, result.message)
+    const modeText = webdavImportMode.value === 'overwrite' ? '覆盖' : '合并'
+    addOperationRecord(`WebDAV ${modeText}下载数据`, true, result.message)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误'
     ElMessage.error(`下载失败：${errorMessage}`)

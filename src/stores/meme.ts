@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import Fuse from 'fuse.js'
 import type { MemeData, SearchFilters, CategoryType } from '@/types'
+import { ImportMode } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
 
 export const useMemeStore = defineStore('meme', () => {
@@ -470,7 +471,7 @@ export const useMemeStore = defineStore('meme', () => {
     }
   }
 
-  const syncFromWebDAV = async () => {
+  const syncFromWebDAV = async (mode: ImportMode = ImportMode.OVERWRITE) => {
     const { createWebDAVService, saveLLMConfigs } = await import('@/utils/webdavService')
     const service = createWebDAVService()
 
@@ -489,12 +490,12 @@ export const useMemeStore = defineStore('meme', () => {
         version: syncData.version
       }
 
-      const success = importData(importDataFormatted)
+      const success = importDataWithMode(importDataFormatted, mode)
       if (!success) {
         throw new Error('数据导入失败')
       }
 
-      // 如果有 LLM 配置，也同时导入
+      // LLM 配置始终覆盖，无论什么模式
       let llmConfigInfo = ''
       if (syncData.llmConfigs) {
         try {
@@ -507,9 +508,10 @@ export const useMemeStore = defineStore('meme', () => {
         }
       }
 
+      const modeText = mode === ImportMode.MERGE ? '合并' : '覆盖'
       return {
         success: true,
-        message: `已从云端下载 ${syncData.memes.length} 个表情包和 ${syncData.categories.length} 个分类${llmConfigInfo}`,
+        message: `已从云端${modeText}下载 ${syncData.memes.length} 个表情包和 ${syncData.categories.length} 个分类${llmConfigInfo}`,
         timestamp: new Date(),
         data: {
           memeCount: syncData.memes.length,
@@ -550,7 +552,16 @@ export const useMemeStore = defineStore('meme', () => {
     }
   }
 
-  // 导入数据
+  // 导入数据（支持覆盖和合并模式）
+  const importDataWithMode = (data: any, mode: ImportMode = ImportMode.OVERWRITE) => {
+    if (mode === ImportMode.OVERWRITE) {
+      return importData(data)
+    } else {
+      return importDataWithMerge(data)
+    }
+  }
+
+  // 导入数据（原覆盖模式）
   const importData = (data: any) => {
     try {
       // 验证基本数据结构
@@ -587,7 +598,7 @@ export const useMemeStore = defineStore('meme', () => {
         return false
       }
 
-      // 处理表情包数据
+      // 处理表情包数据（覆盖模式）
       memes.value = validMemes.map((meme: any) => {
         const processedMeme = {
           ...meme,
@@ -612,6 +623,90 @@ export const useMemeStore = defineStore('meme', () => {
       return true
     } catch (error) {
       console.error('导入数据失败:', error)
+      return false
+    }
+  }
+
+  // 导入数据（合并模式）
+  const importDataWithMerge = (data: any) => {
+    try {
+      // 验证基本数据结构
+      if (!data || typeof data !== 'object') {
+        console.error('导入数据格式错误：数据不是对象')
+        return false
+      }
+
+      // 验证表情包数据
+      if (!data.memes || !Array.isArray(data.memes)) {
+        console.error('导入数据格式错误：缺少有效的表情包数据')
+        return false
+      }
+
+      // 导入分类数据（合并模式 - CategoryManager.importCategories 已支持合并）
+      if (data.categories && Array.isArray(data.categories)) {
+        const validCategories = data.categories.filter((cat: any) =>
+          cat && cat.id && cat.name && typeof cat.id === 'string' && typeof cat.name === 'string'
+        )
+
+        if (validCategories.length > 0) {
+          CategoryManager.importCategories(validCategories)
+        }
+      }
+
+      // 准备表情包合并
+      const validImportMemes = data.memes.filter((meme: any) => {
+        return meme && meme.id && meme.filename && meme.imageUrl && meme.category
+      })
+
+      if (validImportMemes.length === 0) {
+        console.error('导入数据格式错误：没有有效的表情包数据')
+        return false
+      }
+
+      // 获取当前表情包数据
+      const currentMemes = [...memes.value]
+      const mergedMemes = [...currentMemes]
+
+      // 合并表情包数据
+      validImportMemes.forEach((importMeme: any) => {
+        const processedImportMeme = {
+          ...importMeme,
+          uploadDate: importMeme.uploadDate ? new Date(importMeme.uploadDate) : new Date(),
+          isDeleted: importMeme.isDeleted || false,
+          deletedAt: importMeme.deletedAt ? new Date(importMeme.deletedAt) : null
+        }
+
+        // 验证分类是否存在，如果不存在则设置为默认分类
+        const categories = CategoryManager.getCategories()
+        if (!categories.some(cat => cat.id === processedImportMeme.category)) {
+          console.warn(`表情包 "${importMeme.filename}" 的分类 "${importMeme.category}" 不存在，已设置为默认分类`)
+          processedImportMeme.category = 'default'
+        }
+
+        // 查找是否已存在相同ID的表情包
+        const existingIndex = mergedMemes.findIndex(meme => meme.id === processedImportMeme.id)
+
+        if (existingIndex > -1) {
+          // 表情包已存在，更新信息（保留原创建时间，但更新其他字段）
+          mergedMemes[existingIndex] = {
+            ...processedImportMeme,
+            // 如果导入数据没有uploadDate，保留原来的uploadDate
+            uploadDate: processedImportMeme.uploadDate || mergedMemes[existingIndex].uploadDate
+          }
+        } else {
+          // 表情包不存在，添加新表情包
+          mergedMemes.push(processedImportMeme)
+        }
+      })
+
+      // 更新表情包数据
+      memes.value = mergedMemes
+
+      updateFuseInstance()
+      saveToStorage()
+      return true
+    } catch (error) {
+      console.error('合并导入数据失败:', error)
       return false
     }
   }
@@ -714,6 +809,8 @@ export const useMemeStore = defineStore('meme', () => {
     saveSettings,
     exportData,
     importData,
+    importDataWithMode,
+    importDataWithMerge,
 
     // WebDAV 同步方法
     syncToWebDAV,
