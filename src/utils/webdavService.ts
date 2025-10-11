@@ -164,12 +164,18 @@ export function getLLMConfigs(): LLMConfigs | null {
       const configs = JSON.parse(saved)
       if (configs.openai) allConfigs.openai = configs.openai
       if (configs.gemini) allConfigs.gemini = configs.gemini
+      // 从 llm-configs 中读取 lastSelectedProvider
+      if (configs.lastSelectedProvider && (configs.lastSelectedProvider === 'openai' || configs.lastSelectedProvider === 'gemini')) {
+        allConfigs.lastSelectedProvider = configs.lastSelectedProvider
+      }
     }
 
-    // 获取最后选择的提供商
-    const lastProvider = localStorage.getItem('llm-last-provider')
-    if (lastProvider && (lastProvider === 'openai' || lastProvider === 'gemini')) {
-      allConfigs.lastSelectedProvider = lastProvider
+    // 向后兼容：如果 llm-configs 中没有 lastSelectedProvider，尝试从旧的单独存储中读取
+    if (!allConfigs.lastSelectedProvider) {
+      const lastProvider = localStorage.getItem('llm-last-provider')
+      if (lastProvider && (lastProvider === 'openai' || lastProvider === 'gemini')) {
+        allConfigs.lastSelectedProvider = lastProvider
+      }
     }
 
     // 如果有任何配置，返回对象，否则返回null
@@ -186,17 +192,14 @@ export function getLLMConfigs(): LLMConfigs | null {
 
 export function saveLLMConfigs(llmConfigs: LLMConfigs): void {
   try {
-    // 保存LLM配置
-    if (llmConfigs.openai || llmConfigs.gemini) {
-      const configs: Record<string, any> = {}
-      if (llmConfigs.openai) configs.openai = llmConfigs.openai
-      if (llmConfigs.gemini) configs.gemini = llmConfigs.gemini
-      localStorage.setItem('llm-configs', JSON.stringify(configs))
-    }
+    // 保存LLM配置，将 lastSelectedProvider 一起保存到 llm-configs 中
+    const configs: Record<string, any> = {}
+    if (llmConfigs.openai) configs.openai = llmConfigs.openai
+    if (llmConfigs.gemini) configs.gemini = llmConfigs.gemini
+    if (llmConfigs.lastSelectedProvider) configs.lastSelectedProvider = llmConfigs.lastSelectedProvider
 
-    // 保存最后选择的提供商
-    if (llmConfigs.lastSelectedProvider) {
-      localStorage.setItem('llm-last-provider', llmConfigs.lastSelectedProvider)
+    if (Object.keys(configs).length > 0) {
+      localStorage.setItem('llm-configs', JSON.stringify(configs))
     }
   } catch (error) {
     console.error('保存LLM配置失败:', error)

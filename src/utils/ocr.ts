@@ -232,7 +232,21 @@ export class LLMVisionService {
    * 保存最后选择的服务商
    */
   static saveLastSelectedProvider(provider: 'openai' | 'gemini') {
-    localStorage.setItem('llm-last-provider', provider)
+    try {
+      // 读取现有配置
+      const allConfigs = this.getAllConfigs()
+      // 更新 lastSelectedProvider
+      allConfigs.lastSelectedProvider = provider
+      // 保存回 llm-configs
+      const configs: Record<string, any> = {}
+      if (allConfigs.openai) configs.openai = allConfigs.openai
+      if (allConfigs.gemini) configs.gemini = allConfigs.gemini
+      configs.lastSelectedProvider = provider
+      localStorage.setItem('llm-configs', JSON.stringify(configs))
+    } catch (error) {
+      console.error('保存最后选择的服务商失败:', error)
+      throw error
+    }
   }
 
   /**
@@ -240,6 +254,13 @@ export class LLMVisionService {
    */
   static getLastSelectedProvider(): 'openai' | 'gemini' {
     try {
+      // 优先从 llm-configs 中读取
+      const allConfigs = this.getAllConfigs()
+      if (allConfigs.lastSelectedProvider && (allConfigs.lastSelectedProvider === 'openai' || allConfigs.lastSelectedProvider === 'gemini')) {
+        return allConfigs.lastSelectedProvider
+      }
+
+      // 向后兼容：如果 llm-configs 中没有，尝试从旧的单独存储中读取
       const saved = localStorage.getItem('llm-last-provider')
       if (saved && (saved === 'openai' || saved === 'gemini')) {
         return saved as 'openai' | 'gemini'
