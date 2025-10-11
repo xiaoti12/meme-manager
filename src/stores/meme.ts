@@ -14,6 +14,7 @@ export const useMemeStore = defineStore('meme', () => {
   const loading = ref(false)
   const sortBy = ref<string>('date-desc')
   const viewMode = ref<'grid' | 'list' | 'compact'>('grid')
+  const lastUploadCategory = ref<CategoryType>('default')
 
   // Fuse.js 搜索实例
   let fuseInstance: Fuse<MemeData> | null = null
@@ -370,6 +371,12 @@ export const useMemeStore = defineStore('meme', () => {
     viewMode.value = mode
   }
 
+  // 设置上次上传的分类
+  const setLastUploadCategory = (category: CategoryType) => {
+    lastUploadCategory.value = category
+    saveSettings()
+  }
+
   // 清除搜索条件
   const clearSearch = () => {
     searchFilters.value = {
@@ -420,6 +427,7 @@ export const useMemeStore = defineStore('meme', () => {
         const parsedSettings = JSON.parse(settings)
         sortBy.value = parsedSettings.sortBy || 'date-desc'
         viewMode.value = parsedSettings.viewMode || 'grid'
+        lastUploadCategory.value = parsedSettings.lastUploadCategory || 'default'
       }
 
       updateFuseInstance()
@@ -432,7 +440,8 @@ export const useMemeStore = defineStore('meme', () => {
   const saveSettings = () => {
     const settings = {
       sortBy: sortBy.value,
-      viewMode: viewMode.value
+      viewMode: viewMode.value,
+      lastUploadCategory: lastUploadCategory.value
     }
     localStorage.setItem('meme-settings', JSON.stringify(settings))
   }
@@ -775,6 +784,7 @@ export const useMemeStore = defineStore('meme', () => {
     loading,
     sortBy,
     viewMode,
+    lastUploadCategory,
 
     // 计算属性
     filteredMemes,
@@ -801,6 +811,7 @@ export const useMemeStore = defineStore('meme', () => {
     setSearchFilters,
     setSortBy,
     setViewMode,
+    setLastUploadCategory,
     clearSearch,
 
     // 存储方法

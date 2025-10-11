@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled, Loading, Edit } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
@@ -150,7 +150,7 @@ const uploadRef = ref()
 const multiFileUploadRef = ref()
 const previewFile = ref<File | null>(null)
 const previewUrl = ref('')
-const selectedCategory = ref<CategoryType>('default')
+const selectedCategory = ref<CategoryType>(memeStore.lastUploadCategory || 'default')
 const processing = ref(false)
 const processingMessage = ref('')
 const processingProgress = ref(0)
@@ -382,7 +382,7 @@ const resetForm = () => {
 
   previewFile.value = null
   previewUrl.value = ''
-  selectedCategory.value = 'default'
+  // 不再重置分类，保持用户上次的选择
   ocrResult.value = ''
   aiResult.value = ''
   editingOcr.value = false
@@ -433,15 +433,25 @@ const handleConfigSaved = () => {
 const loadCategoryOptions = () => {
   categoryOptions.value = CM.getCategoryOptions()
 
-  // 如果当前选中的分类不存在了，重置为默认分类
+  // 验证从 Store 读取的分类是否仍然存在
+  // 如果不存在（例如分类被删除），则回退到默认分类
   if (selectedCategory.value && selectedCategory.value !== 'default') {
     const exists = categoryOptions.value.some(opt => opt.value === selectedCategory.value)
     if (!exists) {
+      console.warn(`上次选择的分类 "${selectedCategory.value}" 不存在，已回退到默认分类`)
       selectedCategory.value = 'default'
+      // 更新 Store 中的记录
+      memeStore.setLastUploadCategory('default')
     }
   }
 }
 
+// 监听分类变化，自动保存到 Store
+watch(selectedCategory, (newCategory) => {
+  if (newCategory) {
+    memeStore.setLastUploadCategory(newCategory)
+  }
+})
 
 // 组件挂载时加载分类选项
 onMounted(() => {
