@@ -8,13 +8,122 @@
       </div>
     </div>
 
-    <!-- 表情包分类展示 -->
-    <div v-else-if="!isLoading && memeStore.filteredMemes.length > 0 && validCategories.length > 0" class="space-y-12">
-      <!-- 动态分类 -->
-      <CategorySection v-for="categoryItem in categoriesToDisplay" :key="categoryItem.id" :title="categoryItem.name"
-        :memes="memeStore.memesByCategory[categoryItem.id]" :category="categoryItem.id" :selection-mode="selectionMode"
-        :selected-ids="selectedIds" :is-multi-select-mode="isMultiSelectMode" @toggle-selection="toggleSelection"
-        @long-press-select="handleLongPressSelect" @toggle-multi-select="toggleMultiSelectMode" />
+    <!-- 表情包展示 -->
+    <div v-else-if="!isLoading && memeStore.filteredMemes.length > 0" class="space-y-6">
+      <!-- 顶部控制栏 -->
+      <div class="glass-effect backdrop-blur-custom rounded-3xl p-6 card-shadow">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <!-- 左侧：分类选择 -->
+          <div class="flex items-center gap-3">
+            <span class="text-gray-700 font-medium">分类:</span>
+            <el-select
+              v-model="selectedCategory"
+              placeholder="选择分类"
+              size="default"
+              style="width: 180px"
+            >
+              <el-option label="全部分类" value="all" />
+              <el-option
+                v-for="cat in validCategories"
+                :key="cat.id"
+                :label="`${cat.name} (${getCategoryCount(cat.id)})`"
+                :value="cat.id"
+              />
+            </el-select>
+            <span class="text-gray-500 text-sm">共 {{ displayMemes.length }} 张</span>
+          </div>
+
+          <!-- 右侧：操作按钮 -->
+          <div class="flex items-center gap-2">
+            <!-- 视图模式切换 -->
+            <el-button-group>
+              <el-button
+                :type="memeStore.viewMode === 'grid' ? 'primary' : 'default'"
+                size="small"
+                @click="memeStore.setViewMode('grid')"
+                title="详细网格视图"
+              >
+                完整
+              </el-button>
+              <el-button
+                :type="memeStore.viewMode === 'compact' ? 'primary' : 'default'"
+                size="small"
+                @click="memeStore.setViewMode('compact')"
+                title="紧凑网格视图"
+              >
+                紧凑
+              </el-button>
+            </el-button-group>
+
+            <el-button
+              :type="isMultiSelectMode ? 'danger' : 'primary'"
+              size="small"
+              round
+              @click="toggleMultiSelectMode"
+            >
+              <el-icon><Select /></el-icon>
+              {{ isMultiSelectMode ? '取消选择' : '批量管理' }}
+            </el-button>
+
+            <el-button
+              type="info"
+              size="small"
+              round
+              @click="openGallery(0)"
+            >
+              <el-icon><FullScreen /></el-icon>
+              全屏浏览
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 图片展示区 -->
+      <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
+        <!-- 详细网格视图 -->
+        <div
+          v-if="memeStore.viewMode === 'grid'"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6"
+          @click.stop
+        >
+          <MemeCard
+            v-for="(meme, index) in displayMemes"
+            :key="meme.id"
+            :meme="meme"
+            :selection-mode="selectionMode"
+            :is-selected="selectedIds.includes(meme.id)"
+            :is-multi-select-mode="isMultiSelectMode"
+            @download="handleDownload"
+            @copy="handleCopy"
+            @delete="handleDelete"
+            @gallery="openGallery(index)"
+            @toggle-selection="toggleSelection"
+            @long-press-select="handleLongPressSelect"
+          />
+        </div>
+
+        <!-- 紧凑网格视图 -->
+        <div
+          v-else-if="memeStore.viewMode === 'compact'"
+          class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5 sm:gap-2 md:gap-3"
+          @click.stop
+        >
+          <MemeCardCompact
+            v-for="(meme, index) in displayMemes"
+            :key="meme.id"
+            :meme="meme"
+            :selection-mode="selectionMode"
+            :is-selected="selectedIds.includes(meme.id)"
+            :is-multi-select-mode="isMultiSelectMode"
+            @download="handleDownload"
+            @copy="handleCopy"
+            @delete="handleDelete"
+            @gallery="openGallery(index)"
+            @toggle-selection="toggleSelection"
+            @long-press-select="handleLongPressSelect"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- 空状态 -->
@@ -29,7 +138,6 @@
         </router-link>
       </div>
     </div>
-
 
     <!-- 上传提示 -->
     <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow mt-12">
@@ -51,6 +159,16 @@
       </div>
     </div>
 
+    <!-- 全屏图片浏览器 -->
+    <MemeGallery
+      :visible="showGallery"
+      :memes="displayMemes"
+      :initial-index="galleryIndex"
+      @close="showGallery = false"
+      @download="handleDownload"
+      @copy="handleCopy"
+    />
+
     <!-- 选择管理器 -->
     <SelectionManager v-model:selected-ids="selectedIds" @selection-cleared="clearSelection"
       @move-completed="handleMoveCompleted" />
@@ -60,11 +178,15 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Select } from '@element-plus/icons-vue'
+import { Select, FullScreen } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
-import CategorySection from '@/components/CategorySection.vue'
+import MemeCard from '@/components/MemeCard.vue'
+import MemeCardCompact from '@/components/MemeCardCompact.vue'
+import MemeGallery from '@/components/MemeGallery.vue'
 import SelectionManager from '@/components/SelectionManager.vue'
 import { CategoryManager, type Category } from '@/utils/categoryManager'
+import type { MemeData } from '@/types'
+import { copyImageToClipboard } from '@/utils/clipboard'
 
 const memeStore = useMemeStore()
 
@@ -75,6 +197,13 @@ const isLoading = ref(true)
 // 选择状态
 const selectedIds = ref<string[]>([])
 const isMultiSelectMode = ref(false)
+
+// 分类筛选
+const selectedCategory = ref<string>('all')
+
+// 图库状态
+const showGallery = ref(false)
+const galleryIndex = ref(0)
 
 // 选择模式（多选按钮激活或有选中项时自动激活）
 const selectionMode = computed(() => isMultiSelectMode.value || selectedIds.value.length > 0)
@@ -120,14 +249,24 @@ const validCategories = computed(() => {
   )
 })
 
-// 创建一个计算属性，预先过滤出需要显示的分类
-const categoriesToDisplay = computed(() => {
-  return validCategories.value.filter(
-    category => memeStore.memesByCategory[category.id]?.length > 0
-  )
+// 根据选择的分类过滤显示的表情包
+const displayMemes = computed(() => {
+  if (selectedCategory.value === 'all') {
+    return memeStore.filteredMemes
+  }
+  return memeStore.filteredMemes.filter(meme => meme.category === selectedCategory.value)
 })
 
+// 获取某个分类的表情包数量
+const getCategoryCount = (categoryId: string) => {
+  return memeStore.filteredMemes.filter(meme => meme.category === categoryId).length
+}
 
+// 打开图库
+const openGallery = (index: number) => {
+  galleryIndex.value = index
+  showGallery.value = true
+}
 
 // 切换选择状态
 const toggleSelection = (memeId: string) => {
@@ -168,6 +307,41 @@ const handleLongPressSelect = (memeId: string) => {
   // 确保该图片被选中
   if (!selectedIds.value.includes(memeId)) {
     selectedIds.value.push(memeId)
+  }
+}
+
+// 处理下载
+const handleDownload = (meme: MemeData) => {
+  ElMessage.success(`开始下载: ${meme.filename}`)
+}
+
+// 处理复制
+const handleCopy = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法复制')
+    return
+  }
+
+  try {
+    const success = await copyImageToClipboard(meme.imageUrl, meme.filename)
+    if (success) {
+      ElMessage.success(`${meme.filename} 已复制到剪贴板`)
+    } else {
+      ElMessage.error('复制失败，请重试')
+    }
+  } catch (error) {
+    console.error('复制图片失败:', error)
+    ElMessage.error('复制失败，浏览器可能不支持此功能')
+  }
+}
+
+// 处理删除
+const handleDelete = (meme: MemeData) => {
+  const success = memeStore.removeMeme(meme.id)
+  if (success) {
+    ElMessage.success(`${meme.filename} 已移至回收站`)
+  } else {
+    ElMessage.error('删除失败，请重试')
   }
 }
 
