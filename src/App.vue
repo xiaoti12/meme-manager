@@ -16,5 +16,14 @@ import AppHeader from '@/components/AppHeader.vue'
 .main-content {
   padding: 0;
   min-height: calc(100vh - 200px);
+  /* 移动端底部导航栏留白 */
+  padding-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .main-content {
+    /* 移动端为底部固定导航栏预留 64px 空间 */
+    padding-bottom: 64px;
+  }
 }
 </style>

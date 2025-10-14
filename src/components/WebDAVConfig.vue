@@ -1,13 +1,13 @@
 <template>
-  <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">🌐 WebDAV 云端同步</h3>
-        <p class="text-gray-500 text-sm">配置 WebDAV 服务器来实现数据云端同步</p>
+  <div class="glass-effect backdrop-blur-custom rounded-3xl p-4 md:p-8 card-shadow">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+      <div class="mb-3 md:mb-0">
+        <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-1 md:mb-2">🌐 WebDAV 云端同步</h3>
+        <p class="text-gray-500 text-xs md:text-sm">配置 WebDAV 服务器来实现数据云端同步</p>
       </div>
       <el-switch
         v-model="localConfig.enabled"
-        size="large"
+        :size="isMobile ? 'default' : 'large'"
         active-text="启用"
         inactive-text="禁用"
         @change="handleEnabledChange"
@@ -20,8 +20,8 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">服务器地址</label>
         <el-input
           v-model="localConfig.url"
-          placeholder="https://webdav.example.com/dav/"
-          size="large"
+          placeholder="https://app.koofr.net/dav/Koofr"
+          :size="isMobile ? 'default' : 'large'"
           :prefix-icon="Link"
           @blur="validateUrl"
         />
@@ -33,8 +33,8 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
         <el-input
           v-model="localConfig.username"
-          placeholder="your-username"
-          size="large"
+          placeholder="xiaoti@linux.do"
+          :size="isMobile ? 'default' : 'large'"
           :prefix-icon="User"
         />
       </div>
@@ -45,33 +45,34 @@
         <el-input
           v-model="localConfig.password"
           type="password"
-          placeholder="your-password"
-          size="large"
+          placeholder="••••••••••••••"
+          :size="isMobile ? 'default' : 'large'"
           :prefix-icon="Lock"
           show-password
         />
       </div>
 
       <!-- 代理模式 -->
-      <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-        <div>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-blue-50 rounded-lg">
+        <div class="mb-2 md:mb-0">
           <p class="font-medium text-gray-700">代理模式</p>
-          <p class="text-sm text-gray-500">通过本地代理访问，避免 CORS 跨域问题</p>
+          <p class="text-xs md:text-sm text-gray-500">通过本地代理访问，避免 CORS 跨域问题</p>
         </div>
         <el-switch
           v-model="localConfig.useProxy"
-          size="large"
+          :size="isMobile ? 'default' : 'large'"
         />
       </div>
 
       <!-- 操作按钮 -->
-      <div class="flex gap-3 pt-4">
+      <div class="flex flex-col md:flex-row gap-3 pt-4">
         <el-button
           type="success"
-          size="large"
+          :size="isMobile ? 'default' : 'large'"
           @click="testConnection"
           :loading="testing"
           :disabled="!isConfigValid"
+          class="w-full md:w-auto"
         >
           <span v-if="!testing">🔗 测试连接</span>
           <span v-else>连接中...</span>
@@ -79,16 +80,18 @@
 
         <el-button
           type="primary"
-          size="large"
+          :size="isMobile ? 'default' : 'large'"
           @click="saveConfig"
           :disabled="!isConfigValid"
+          class="w-full md:w-auto"
         >
           💾 保存配置
         </el-button>
 
         <el-button
-          size="large"
+          :size="isMobile ? 'default' : 'large'"
           @click="resetConfig"
+          class="w-full md:w-auto"
         >
           🔄 重置
         </el-button>
@@ -115,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Link, User, Lock } from '@element-plus/icons-vue'
 import type { WebDAVConfig } from '@/types'
@@ -141,6 +144,17 @@ const connectionStatus = ref<{
   success: boolean
   message: string
 } | null>(null)
+
+// 移动端检测
+const isMobile = ref(false)
+
+// 检测屏幕尺寸
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+// 监听窗口大小变化
+let resizeHandler: (() => void) | null = null
 
 // 配置是否有效
 const isConfigValid = computed(() => {
@@ -257,6 +271,16 @@ const resetConfig = () => {
 // 组件挂载时加载配置
 onMounted(() => {
   loadConfig()
+  checkMobile()
+  resizeHandler = checkMobile
+  window.addEventListener('resize', resizeHandler)
+})
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+  }
 })
 </script>
 

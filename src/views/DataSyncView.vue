@@ -1,10 +1,10 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto space-y-8">
+  <div class="container mx-auto px-4 py-4 md:py-8">
+    <div class="max-w-4xl mx-auto space-y-4 md:space-y-8">
       <!-- 页面标题 -->
       <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">📦 数据导入导出</h1>
-        <p class="text-gray-600">管理你的表情包数据，支持本地文件和 WebDAV 云端同步</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2 md:mb-4">📦 数据导入导出</h1>
+        <p class="text-sm md:text-base text-gray-600">管理你的表情包数据，支持本地文件和 WebDAV 云端同步</p>
       </div>
 
 
@@ -12,25 +12,27 @@
       <WebDAVConfig ref="webdavConfigRef" @config-saved="handleWebDAVConfigSaved" />
 
       <!-- 数据操作 -->
-      <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
-        <h2 class="text-xl font-semibold text-gray-700 mb-6">🔄 数据操作</h2>
+      <div class="glass-effect backdrop-blur-custom rounded-3xl p-4 md:p-8 card-shadow">
+        <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-4 md:mb-6">🔄 数据操作</h2>
 
-        <div class="grid md:grid-cols-2 gap-8">
+        <div class="grid md:grid-cols-2 gap-4 md:gap-8">
           <!-- 本地操作 -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-700 mb-4">💻 本地文件操作</h3>
+          <div class="space-y-3 md:space-y-4">
+            <h3 class="text-base md:text-lg font-medium text-gray-700 mb-3 md:mb-4">💻 本地文件操作</h3>
 
             <!-- 导出数据 -->
-            <div class="p-4 border border-gray-200 rounded-lg">
-              <div class="flex items-center justify-between mb-3">
-                <div>
+            <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+                <div class="mb-2 md:mb-0">
                   <h4 class="font-medium text-gray-700">导出数据</h4>
-                  <p class="text-sm text-gray-500">将所有数据导出为 JSON 文件</p>
+                  <p class="text-xs md:text-sm text-gray-500">将所有数据导出为 JSON 文件</p>
                 </div>
                 <el-button
                   type="primary"
+                  :size="isMobile ? 'small' : 'default'"
                   @click="exportData"
                   :loading="exporting"
+                  class="w-full md:w-auto"
                 >
                   📤 导出
                 </el-button>
@@ -38,16 +40,18 @@
             </div>
 
             <!-- 导入数据 -->
-            <div class="p-4 border border-gray-200 rounded-lg">
-              <div class="flex items-center justify-between mb-3">
-                <div>
+            <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+                <div class="mb-2 md:mb-0">
                   <h4 class="font-medium text-gray-700">导入数据</h4>
-                  <p class="text-sm text-gray-500">从 JSON 文件导入数据</p>
+                  <p class="text-xs md:text-sm text-gray-500">从 JSON 文件导入数据</p>
                 </div>
                 <el-button
                   type="success"
+                  :size="isMobile ? 'small' : 'default'"
                   @click="importData"
                   :loading="importing"
+                  class="w-full md:w-auto"
                 >
                   📥 导入
                 </el-button>
@@ -71,21 +75,23 @@
           </div>
 
           <!-- 云端操作 -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-700 mb-4">☁️ WebDAV 云端同步</h3>
+          <div class="space-y-3 md:space-y-4">
+            <h3 class="text-base md:text-lg font-medium text-gray-700 mb-3 md:mb-4">☁️ WebDAV 云端同步</h3>
 
             <!-- 上传到云端 -->
-            <div class="p-4 border border-gray-200 rounded-lg">
-              <div class="flex items-center justify-between mb-3">
-                <div>
+            <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+                <div class="mb-2 md:mb-0">
                   <h4 class="font-medium text-gray-700">上传到云端</h4>
-                  <p class="text-sm text-gray-500">将本地数据同步到 WebDAV 服务器</p>
+                  <p class="text-xs md:text-sm text-gray-500">将本地数据同步到 WebDAV 服务器</p>
                 </div>
                 <el-button
                   type="primary"
+                  :size="isMobile ? 'small' : 'default'"
                   @click="uploadToWebDAV"
                   :loading="uploading"
                   :disabled="!webdavEnabled"
+                  class="w-full md:w-auto"
                 >
                   ☁️ 上传
                 </el-button>
@@ -93,17 +99,19 @@
             </div>
 
             <!-- 从云端下载 -->
-            <div class="p-4 border border-gray-200 rounded-lg">
-              <div class="flex items-center justify-between mb-3">
-                <div>
+            <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+                <div class="mb-2 md:mb-0">
                   <h4 class="font-medium text-gray-700">从云端下载</h4>
-                  <p class="text-sm text-gray-500">从 WebDAV 服务器下载数据</p>
+                  <p class="text-xs md:text-sm text-gray-500">从 WebDAV 服务器下载数据</p>
                 </div>
                 <el-button
                   type="success"
+                  :size="isMobile ? 'small' : 'default'"
                   @click="downloadFromWebDAV"
                   :loading="downloading"
                   :disabled="!webdavEnabled"
+                  class="w-full md:w-auto"
                 >
                   📥 下载
                 </el-button>
@@ -130,15 +138,15 @@
       </div>
 
       <!-- 操作历史 -->
-      <div v-if="operationHistory.length > 0" class="glass-effect backdrop-blur-custom rounded-3xl p-6 card-shadow">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">📋 操作历史</h2>
-        <div class="space-y-2 max-h-64 overflow-y-auto">
+      <div v-if="operationHistory.length > 0" class="glass-effect backdrop-blur-custom rounded-3xl p-4 md:p-6 card-shadow">
+        <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-3 md:mb-4">📋 操作历史</h2>
+        <div class="space-y-2 max-h-48 md:max-h-64 overflow-y-auto">
           <div
             v-for="(record, index) in operationHistory"
             :key="index"
-            class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            class="flex flex-col md:flex-row md:items-center md:justify-between p-2 md:p-3 bg-gray-50 rounded-lg"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 md:gap-3">
               <span :class="{
                 'text-green-600': record.success,
                 'text-red-600': !record.success
@@ -146,11 +154,11 @@
                 {{ record.success ? '✅' : '❌' }}
               </span>
               <div>
-                <p class="font-medium text-gray-700">{{ record.operation }}</p>
-                <p class="text-sm text-gray-500">{{ formatTime(record.timestamp) }}</p>
+                <p class="text-sm md:text-base font-medium text-gray-700">{{ record.operation }}</p>
+                <p class="text-xs md:text-sm text-gray-500">{{ formatTime(record.timestamp) }}</p>
               </div>
             </div>
-            <div v-if="record.details" class="text-sm text-gray-500">
+            <div v-if="record.details" class="text-xs md:text-sm text-gray-500 mt-1 md:mt-0 md:ml-2">
               {{ record.details }}
             </div>
           </div>
@@ -161,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
@@ -187,6 +195,16 @@ const webdavImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
 // 数据状态
 const webdavEnabled = ref(false)
 
+// 移动端检测
+const isMobile = ref(false)
+
+// 检测屏幕尺寸
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+// 监听窗口大小变化
+let resizeHandler: (() => void) | null = null
 
 // 操作历史
 const operationHistory = ref<Array<{
@@ -364,6 +382,16 @@ const handleWebDAVConfigSaved = () => {
 // 组件挂载时初始化WebDAV状态
 onMounted(() => {
   refreshWebDAVStatus()
+  checkMobile()
+  resizeHandler = checkMobile
+  window.addEventListener('resize', resizeHandler)
+})
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+  }
 })
 
 
