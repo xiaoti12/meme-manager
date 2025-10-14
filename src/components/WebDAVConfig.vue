@@ -297,4 +297,38 @@ onUnmounted(() => {
 .backdrop-blur-custom {
   backdrop-filter: blur(10px);
 }
+
+/* 移动端按钮对齐优化 */
+@media (max-width: 767px) {
+  :deep(.el-button) {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    line-height: 1 !important;
+    border-radius: 8px !important;
+  }
+
+  :deep(.el-button span) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    line-height: 1;
+  }
+
+  :deep(.el-button .el-loading-spinner) {
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  :deep(.el-button.is-loading) {
+    padding: 0 16px !important;
+  }
+}
 </style>

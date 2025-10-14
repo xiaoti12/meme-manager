@@ -22,8 +22,8 @@
 
             <!-- 导出数据 -->
             <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                <div class="mb-2 md:mb-0">
+              <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0 mr-3">
                   <h4 class="font-medium text-gray-700">导出数据</h4>
                   <p class="text-xs md:text-sm text-gray-500">将所有数据导出为 JSON 文件</p>
                 </div>
@@ -32,7 +32,7 @@
                   :size="isMobile ? 'small' : 'default'"
                   @click="exportData"
                   :loading="exporting"
-                  class="w-full md:w-auto"
+                  class="flex-shrink-0 data-sync-btn"
                 >
                   📤 导出
                 </el-button>
@@ -41,8 +41,8 @@
 
             <!-- 导入数据 -->
             <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                <div class="mb-2 md:mb-0">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex-1 min-w-0 mr-3">
                   <h4 class="font-medium text-gray-700">导入数据</h4>
                   <p class="text-xs md:text-sm text-gray-500">从 JSON 文件导入数据</p>
                 </div>
@@ -51,7 +51,7 @@
                   :size="isMobile ? 'small' : 'default'"
                   @click="importData"
                   :loading="importing"
-                  class="w-full md:w-auto"
+                  class="flex-shrink-0 data-sync-btn"
                 >
                   📥 导入
                 </el-button>
@@ -80,8 +80,8 @@
 
             <!-- 上传到云端 -->
             <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                <div class="mb-2 md:mb-0">
+              <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0 mr-3">
                   <h4 class="font-medium text-gray-700">上传到云端</h4>
                   <p class="text-xs md:text-sm text-gray-500">将本地数据同步到 WebDAV 服务器</p>
                 </div>
@@ -91,7 +91,7 @@
                   @click="uploadToWebDAV"
                   :loading="uploading"
                   :disabled="!webdavEnabled"
-                  class="w-full md:w-auto"
+                  class="flex-shrink-0 data-sync-btn"
                 >
                   ☁️ 上传
                 </el-button>
@@ -100,8 +100,8 @@
 
             <!-- 从云端下载 -->
             <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                <div class="mb-2 md:mb-0">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex-1 min-w-0 mr-3">
                   <h4 class="font-medium text-gray-700">从云端下载</h4>
                   <p class="text-xs md:text-sm text-gray-500">从 WebDAV 服务器下载数据</p>
                 </div>
@@ -111,7 +111,7 @@
                   @click="downloadFromWebDAV"
                   :loading="downloading"
                   :disabled="!webdavEnabled"
-                  class="w-full md:w-auto"
+                  class="flex-shrink-0 data-sync-btn"
                 >
                   📥 下载
                 </el-button>
@@ -413,5 +413,32 @@ onUnmounted(() => {
 
 .backdrop-blur-custom {
   backdrop-filter: blur(10px);
+}
+
+/* 移动端按钮样式优化 */
+@media (max-width: 767px) {
+  .data-sync-btn {
+    min-width: 72px !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+  }
+
+  :deep(.data-sync-btn .el-button) {
+    min-width: 72px !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :deep(.data-sync-btn span) {
+    font-size: 13px !important;
+    line-height: 1 !important;
+  }
 }
 </style>
