@@ -20,50 +20,7 @@
         </el-input>
       </div>
 
-      <div class="mb-6">
-        <!-- 桌面端分类按钮 -->
-        <div class="md:flex md:flex-wrap md:justify-center md:gap-3 hidden">
-          <el-button v-for="category in categories" :key="category.value"
-            :type="selectedCategory === category.value ? 'primary' : 'default'"
-            :class="{ 'bg-primary-500 text-white': selectedCategory === category.value }" round
-            @click="handleCategoryChange(category.value)">
-            {{ category.label }}
-          </el-button>
-        </div>
-        <!-- 移动端横向滚动分类 -->
-        <div class="md:hidden overflow-x-auto scrollbar-hide">
-          <div class="flex gap-3 pb-2 px-1" style="width: max-content;">
-            <el-button v-for="category in categories" :key="category.value"
-              :type="selectedCategory === category.value ? 'primary' : 'default'"
-              :class="{ 'bg-primary-500 text-white': selectedCategory === category.value }"
-              size="small" round
-              @click="handleCategoryChange(category.value)">
-              {{ category.label }}
-            </el-button>
-          </div>
-        </div>
-      </div>
 
-      <!-- 统计信息 - 简化移动端显示 -->
-      <div class="text-center mt-4 text-sm text-gray-600">
-        <!-- 移动端简化显示 -->
-        <div class="md:hidden">
-          <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
-          <span v-if="memeStore.getStatistics.deleted > 0" class="ml-4 text-orange-600">
-            回收站: {{ memeStore.getStatistics.deleted }}
-          </span>
-        </div>
-        <!-- 桌面端完整显示 -->
-        <div class="hidden md:flex justify-center items-center gap-6">
-          <span>共 {{ memeStore.getStatistics.total }} 个表情包</span>
-          <span v-for="cat in topCategories" :key="cat.id">
-            {{ cat.name }}: {{ memeStore.getStatistics.byCategory[cat.id] || 0 }}
-          </span>
-          <span v-if="memeStore.getStatistics.deleted > 0" class="text-orange-600">
-            回收站: {{ memeStore.getStatistics.deleted }}
-          </span>
-        </div>
-      </div>
 
       <!-- 桌面端导航 -->
       <div class="hidden md:flex justify-center gap-4 mt-4">
@@ -114,11 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
-import type { CategoryType } from '@/types'
-import { CategoryManager } from '@/utils/categoryManager'
 
 // 图标URL
 const iconUrl = computed(() => {
@@ -132,8 +87,6 @@ const iconUrl = computed(() => {
 const memeStore = useMemeStore()
 
 const searchKeyword = ref('')
-const selectedCategory = ref<CategoryType>('all')
-const categoriesVersion = ref(0) // 用于强制更新计算属性
 
 // 移动端底部导航配置
 const navigationItems = [
@@ -145,66 +98,19 @@ const navigationItems = [
   { name: 'data-sync', path: '/data-sync', icon: '📦', label: '数据同步' }
 ]
 
-// 动态分类列表
-const categories = computed(() => {
-  // 通过读取 categoriesVersion 来确保计算属性会在分类变化时重新计算
-  categoriesVersion.value // 这行代码确保依赖
 
-  const staticCategories = [
-    { value: 'all' as CategoryType, label: '全部' }
-  ]
 
-  const dynamicCategories = CategoryManager.getCategories().map(cat => ({
-    value: cat.id as CategoryType,
-    label: cat.name
-  }))
-
-  return [...staticCategories, ...dynamicCategories]
-})
-
-// 监听分类变化
-let unsubscribe: (() => void) | null = null
-
-onMounted(() => {
-  // 监听分类变化
-  unsubscribe = CategoryManager.addListener(() => {
-    categoriesVersion.value++
-  })
-})
-
-onUnmounted(() => {
-  // 清理监听器
-  if (unsubscribe) {
-    unsubscribe()
-  }
-})
-
-// 显示前3个有内容的分类
-const topCategories = computed(() => {
-  const stats = memeStore.getStatistics
-  return CategoryManager.getCategories()
-    .filter(cat => (stats.byCategory[cat.id] || 0) > 0)
-    .sort((a, b) => (stats.byCategory[b.id] || 0) - (stats.byCategory[a.id] || 0))
-    .slice(0, 3)
-})
 
 const handleSearch = () => {
   memeStore.setSearchFilters({
     keyword: searchKeyword.value,
-    category: selectedCategory.value
-  })
-}
-
-const handleCategoryChange = (category: CategoryType) => {
-  selectedCategory.value = category
-  memeStore.setSearchFilters({
-    keyword: searchKeyword.value,
-    category: category
+    category: 'all'
   })
 }
 
 
-watch([searchKeyword, selectedCategory], () => {
+
+watch(searchKeyword, () => {
   handleSearch()
 })
 </script>
@@ -224,15 +130,6 @@ watch([searchKeyword, selectedCategory], () => {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 隐藏移动端横向滚动条 */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari, Opera */
-}
 
 /* iOS 安全区域适配 */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
