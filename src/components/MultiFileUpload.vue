@@ -325,7 +325,7 @@ const processFile = async (fileItem: FileItem): Promise<void> => {
 
     if (result.success && result.memeData) {
       // 更新文件项的结果显示
-      fileItem.ocrResult = result.memeData.ocrText
+      fileItem.ocrResult = result.memeData.ocrText.replace(/\n/g, ' ')
       fileItem.aiResult = result.memeData.aiDescription
 
       // 如果使用了Cloudinary，更新图片URL
