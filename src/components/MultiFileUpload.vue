@@ -28,12 +28,9 @@
         <div v-if="currentFile" class="current-file-view bg-white rounded-lg shadow-lg p-6">
           <div class="flex flex-col lg:flex-row gap-6">
             <!-- 图片预览 -->
-            <div class="flex-shrink-0">
+            <div class="flex-shrink-0 min-w-0">
               <img :src="currentFile.previewUrl" :alt="currentFile.file.name"
                 class="w-full lg:w-80 h-64 object-cover rounded-lg shadow-md" />
-              <div class="mt-2 text-center text-sm text-gray-600">
-                {{ currentFile.file.name }} ({{ formatFileSize(currentFile.file.size) }})
-              </div>
             </div>
 
             <!-- OCR编辑区域 -->
