@@ -80,9 +80,31 @@
 
       <!-- 图片展示区 -->
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-8 card-shadow">
-        <!-- 详细网格视图 -->
+        <!-- 移动端完整模式：列表布局 -->
         <div
-          v-if="memeStore.viewMode === 'grid'"
+          v-if="isMobile && memeStore.viewMode === 'grid'"
+          class="flex flex-col gap-3"
+          @click.stop
+        >
+          <MemeCardMobile
+            v-for="(meme, index) in displayMemes"
+            :key="meme.id"
+            :meme="meme"
+            :selection-mode="selectionMode"
+            :is-selected="selectedIds.includes(meme.id)"
+            :is-multi-select-mode="isMultiSelectMode"
+            @download="handleDownload"
+            @copy="handleCopy"
+            @delete="handleDelete"
+            @gallery="openGallery(index)"
+            @toggle-selection="toggleSelection"
+            @long-press-select="handleLongPressSelect"
+          />
+        </div>
+
+        <!-- 桌面端完整模式：详细网格视图 -->
+        <div
+          v-else-if="!isMobile && memeStore.viewMode === 'grid'"
           class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6"
           @click.stop
         >
@@ -102,10 +124,10 @@
           />
         </div>
 
-        <!-- 紧凑网格视图 -->
+        <!-- 紧凑网格视图 (桌面端和移动端都使用) -->
         <div
           v-else-if="memeStore.viewMode === 'compact'"
-          class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5 sm:gap-2 md:gap-3"
+          class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5 sm:gap-2 md:gap-3"
           @click.stop
         >
           <MemeCardCompact
@@ -176,12 +198,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Select, FullScreen } from '@element-plus/icons-vue'
 import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
 import MemeCardCompact from '@/components/MemeCardCompact.vue'
+import MemeCardMobile from '@/components/MemeCardMobile.vue'
 import MemeGallery from '@/components/MemeGallery.vue'
 import SelectionManager from '@/components/SelectionManager.vue'
 import { CategoryManager, type Category } from '@/utils/categoryManager'
@@ -204,6 +227,14 @@ const selectedCategory = ref<string>('all')
 // 图库状态
 const showGallery = ref(false)
 const galleryIndex = ref(0)
+
+// 移动端判断
+const isMobile = ref(false)
+
+// 检测是否为移动端
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 640 // Tailwind 的 sm 断点
+}
 
 // 选择模式（多选按钮激活或有选中项时自动激活）
 const selectionMode = computed(() => isMultiSelectMode.value || selectedIds.value.length > 0)
@@ -365,6 +396,14 @@ onMounted(async () => {
   if (categoryList.value.length === 0 || isLoading.value) {
     await loadCategories()
   }
+  // 初始化移动端检测
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
