@@ -186,7 +186,14 @@ const handleTouchStart = (event: TouchEvent) => {
 }
 
 const handleTouchEnd = () => {
+  // 如果定时器还存在，说明是短按（<500ms）
+  const wasShortTap = longPressTimer.value !== null
   clearLongPressTimer()
+
+  // 短按时手动触发点击事件
+  if (wasShortTap && !isClickSuppressed.value) {
+    handleCardClick()
+  }
 }
 
 const handleTouchCancel = () => {

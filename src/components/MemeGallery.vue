@@ -49,9 +49,11 @@
       </div>
 
       <!-- 主要内容区域 -->
-      <div class="flex-1 flex p-4 gap-4 relative">
+      <div class="flex-1 flex gap-4 relative"
+           :class="isMobile ? 'flex-col p-2' : 'flex-row p-4'">
         <!-- 左侧图片显示区域 -->
-        <div class="flex-1 flex items-center justify-center relative">
+        <div class="flex items-center justify-center relative"
+             :class="isMobile ? 'flex-1 min-h-0' : 'flex-1'">
           <!-- 上一张按钮 -->
           <button
             v-if="memes.length > 1"
@@ -90,9 +92,10 @@
         <!-- 右侧信息面板 -->
         <div
           v-if="currentMeme"
-          class="w-80 bg-white rounded-lg shadow-lg p-4 overflow-y-auto flex-shrink-0"
+          class="bg-white rounded-lg shadow-lg overflow-y-auto flex-shrink-0"
+          :class="isMobile ? 'w-full p-2 max-h-48' : 'w-80 p-4'"
         >
-          <div class="space-y-4">
+          <div :class="isMobile ? 'space-y-2' : 'space-y-4'">
             <div>
               <h4 class="text-sm font-semibold text-gray-600 mb-2">文件信息</h4>
               <div class="bg-gray-50 p-3 rounded text-xs space-y-1">
@@ -206,6 +209,13 @@ import {
   Picture,
   Edit
 } from '@element-plus/icons-vue'
+
+// 移动端检测
+const isMobile = ref(false)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 640
+}
 
 interface Props {
   visible: boolean
@@ -357,10 +367,14 @@ onMounted(() => {
   if (props.visible) {
     enableBodyScroll()
   }
+  // 移动端检测
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', checkMobile)
   // 恢复默认的 overflow 行为
   enableBodyScroll()
 })
