@@ -8,44 +8,56 @@
   >
     <div class="h-full flex flex-col bg-black">
       <!-- 顶部工具栏 -->
-      <div class="flex items-center justify-between p-4 bg-black bg-opacity-80 text-white">
-        <div class="flex items-center gap-4">
-          <h3 class="text-lg font-semibold">
-            {{ currentMeme?.filename || '图片浏览' }}
-          </h3>
-          <span class="text-sm text-gray-300">
-            {{ currentIndex + 1 }} / {{ memes.length }}
-          </span>
-        </div>
+      <div class="flex items-center justify-center gap-4 p-4 bg-black bg-opacity-80 text-white">
+        <!-- 向左按钮 -->
+        <el-button
+          v-if="memes.length > 1"
+          @click="previousImage"
+          :disabled="currentIndex === 0"
+          size="small"
+          circle
+          title="上一张"
+        >
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
 
-        <div class="flex items-center gap-2">
-          <el-button
-            type="primary"
-            size="small"
-            circle
-            @click="$emit('download', currentMeme)"
-            title="下载"
-          >
-            <el-icon><Download /></el-icon>
-          </el-button>
-          <el-button
-            type="success"
-            size="small"
-            circle
-            @click="$emit('copy', currentMeme)"
-            title="复制"
-          >
-            <el-icon><CopyDocument /></el-icon>
-          </el-button>
-          <el-button
-            size="small"
-            circle
-            @click="$emit('close')"
-            title="关闭"
-          >
-            <el-icon><Close /></el-icon>
-          </el-button>
-        </div>
+        <!-- 当前数/总数 -->
+        <span class="text-sm text-gray-300">
+          {{ currentIndex + 1 }} / {{ memes.length }}
+        </span>
+
+        <!-- 下载按钮 -->
+        <el-button
+          type="primary"
+          size="small"
+          circle
+          @click="$emit('download', currentMeme)"
+          title="下载"
+        >
+          <el-icon><Download /></el-icon>
+        </el-button>
+
+        <!-- 关闭按钮 -->
+        <el-button
+          size="small"
+          circle
+          @click="$emit('close')"
+          title="关闭"
+        >
+          <el-icon><Close /></el-icon>
+        </el-button>
+
+        <!-- 向右按钮 -->
+        <el-button
+          v-if="memes.length > 1"
+          @click="nextImage"
+          :disabled="currentIndex === memes.length - 1"
+          size="small"
+          circle
+          title="下一张"
+        >
+          <el-icon><ArrowRight /></el-icon>
+        </el-button>
       </div>
 
       <!-- 主要内容区域 -->
@@ -54,16 +66,6 @@
         <!-- 左侧图片显示区域 -->
         <div class="flex items-center justify-center relative"
              :class="isMobile ? 'flex-1 min-h-0' : 'flex-1'">
-          <!-- 上一张按钮 -->
-          <button
-            v-if="memes.length > 1"
-            @click="previousImage"
-            class="absolute left-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
-            :disabled="currentIndex === 0"
-          >
-            <el-icon size="20"><ArrowLeft /></el-icon>
-          </button>
-
           <!-- 图片显示 -->
           <div class="max-w-full max-h-full p-4">
             <img
@@ -77,35 +79,16 @@
               <p class="mt-4">图片加载失败</p>
             </div>
           </div>
-
-          <!-- 下一张按钮 -->
-          <button
-            v-if="memes.length > 1"
-            @click="nextImage"
-            class="absolute right-4 z-10 w-12 h-12 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white flex items-center justify-center transition-all"
-            :disabled="currentIndex === memes.length - 1"
-          >
-            <el-icon size="20"><ArrowRight /></el-icon>
-          </button>
         </div>
 
         <!-- 右侧信息面板 -->
         <div
           v-if="currentMeme"
           class="bg-white rounded-lg shadow-lg overflow-y-auto flex-shrink-0"
-          :class="isMobile ? 'w-full p-2 max-h-48' : 'w-80 p-4'"
+          :class="isMobile ? 'w-full p-2' : 'w-80 p-4'"
         >
           <div :class="isMobile ? 'space-y-2' : 'space-y-4'">
-            <div>
-              <h4 class="text-sm font-semibold text-gray-600 mb-2">文件信息</h4>
-              <div class="bg-gray-50 p-3 rounded text-xs space-y-1">
-                <div><strong>文件名:</strong> {{ currentMeme.filename }}</div>
-                <div><strong>分类:</strong> {{ getCategoryName(currentMeme.category) }}</div>
-                <div v-if="currentMeme.size"><strong>大小:</strong> {{ formatFileSize(currentMeme.size) }}</div>
-                <div v-if="currentMeme.uploadTime"><strong>上传时间:</strong> {{ formatDate(currentMeme.uploadTime) }}</div>
-              </div>
-            </div>
-
+            <!-- OCR识别 - 优先显示 -->
             <div>
               <div class="flex items-center justify-between mb-2">
                 <h4 class="text-sm font-semibold text-green-600">OCR识别</h4>
@@ -158,10 +141,22 @@
               </div>
             </div>
 
+            <!-- AI分析 - 第二优先 -->
             <div v-if="currentMeme.aiDescription">
               <h4 class="text-sm font-semibold text-blue-600 mb-2">AI分析</h4>
               <div class="bg-blue-50 border-l-4 border-blue-400 p-3 text-xs leading-relaxed">
                 {{ currentMeme.aiDescription }}
+              </div>
+            </div>
+
+            <!-- 文件信息 - 最后显示 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 mb-2">文件信息</h4>
+              <div class="bg-gray-50 p-3 rounded text-xs space-y-1">
+                <div><strong>文件名:</strong> {{ currentMeme.filename }}</div>
+                <div><strong>分类:</strong> {{ getCategoryName(currentMeme.category) }}</div>
+                <div v-if="currentMeme.size"><strong>大小:</strong> {{ formatFileSize(currentMeme.size) }}</div>
+                <div v-if="currentMeme.uploadTime"><strong>上传时间:</strong> {{ formatDate(currentMeme.uploadTime) }}</div>
               </div>
             </div>
           </div>
