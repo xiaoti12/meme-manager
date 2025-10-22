@@ -11,6 +11,7 @@
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseLeave"
     @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
     @touchend="handleTouchEnd"
     @touchcancel="handleTouchCancel"
   >
@@ -175,14 +176,17 @@ const handleMouseLeave = () => {
 }
 
 // 触摸事件处理
-const handleTouchStart = (event: TouchEvent) => {
-  // 防止默认的触摸行为
-  event.preventDefault()
-
+const handleTouchStart = () => {
+  // 不阻止默认行为,允许页面滚动
   isLongPressing.value = true
   longPressTimer.value = window.setTimeout(() => {
     triggerLongPressSelect()
   }, 500)
+}
+
+const handleTouchMove = () => {
+  // 用户在滚动,取消长按
+  clearLongPressTimer()
 }
 
 const handleTouchEnd = () => {
