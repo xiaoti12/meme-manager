@@ -210,6 +210,7 @@ import type { MemeData, CategoryType } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
 import { useRoute } from 'vue-router'
 import { copyImageToClipboard } from '@/utils/clipboard'
+import { downloadImage } from '@/utils/download'
 
 const memeStore = useMemeStore()
 
@@ -356,8 +357,19 @@ const showStatistics = () => {
   )
 }
 
-const handleDownload = (meme: MemeData) => {
-  ElMessage.success(`开始下载: ${meme.filename}`)
+const handleDownload = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法下载')
+    return
+  }
+
+  try {
+    await downloadImage(meme.imageUrl, meme.filename)
+    ElMessage.success(`${meme.filename} 下载成功`)
+  } catch (error) {
+    console.error('下载图片失败:', error)
+    ElMessage.error('下载失败，请重试')
+  }
 }
 
 const handleCopy = async (meme: MemeData) => {

@@ -31,7 +31,7 @@
           type="primary"
           size="small"
           circle
-          @click="$emit('download', currentMeme)"
+          @click="handleDownload"
           title="下载"
         >
           <el-icon><Download /></el-icon>
@@ -195,6 +195,7 @@ import { ElMessage } from 'element-plus'
 import type { MemeData } from '@/types'
 import { useMemeStore } from '@/stores/meme'
 import { CategoryManager } from '@/utils/categoryManager'
+import { downloadImage } from '@/utils/download'
 import {
   Close,
   Download,
@@ -329,6 +330,22 @@ const formatFileSize = (size: number) => {
 
 const formatDate = (timestamp: number) => {
   return new Date(timestamp).toLocaleString('zh-CN')
+}
+
+// 处理下载
+const handleDownload = async () => {
+  if (!currentMeme.value || !currentMeme.value.imageUrl) {
+    ElMessage.error('图片地址无效，无法下载')
+    return
+  }
+
+  try {
+    await downloadImage(currentMeme.value.imageUrl, currentMeme.value.filename)
+    ElMessage.success(`${currentMeme.value.filename} 下载成功`)
+  } catch (error) {
+    console.error('下载图片失败:', error)
+    ElMessage.error('下载失败，请重试')
+  }
 }
 
 // 键盘快捷键

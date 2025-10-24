@@ -210,6 +210,7 @@ import SelectionManager from '@/components/SelectionManager.vue'
 import { CategoryManager, type Category } from '@/utils/categoryManager'
 import type { MemeData } from '@/types'
 import { copyImageToClipboard } from '@/utils/clipboard'
+import { downloadImage } from '@/utils/download'
 
 const memeStore = useMemeStore()
 
@@ -342,8 +343,19 @@ const handleLongPressSelect = (memeId: string) => {
 }
 
 // 处理下载
-const handleDownload = (meme: MemeData) => {
-  ElMessage.success(`开始下载: ${meme.filename}`)
+const handleDownload = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法下载')
+    return
+  }
+
+  try {
+    await downloadImage(meme.imageUrl, meme.filename)
+    ElMessage.success(`${meme.filename} 下载成功`)
+  } catch (error) {
+    console.error('下载图片失败:', error)
+    ElMessage.error('下载失败，请重试')
+  }
 }
 
 // 处理复制

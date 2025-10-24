@@ -115,6 +115,7 @@ import MemeGallery from './MemeGallery.vue'
 import { ElMessage } from 'element-plus'
 import { FullScreen, Select, Grid, List } from '@element-plus/icons-vue'
 import { copyImageToClipboard } from '@/utils/clipboard'
+import { downloadImage } from '@/utils/download'
 import { useMemeStore } from '@/stores/meme'
 
 interface Props {
@@ -165,9 +166,19 @@ const openGallery = (index: number) => {
   showGallery.value = true
 }
 
-const handleDownload = (meme: MemeData) => {
-  // 模拟下载
-  ElMessage.success(`开始下载: ${meme.filename}`)
+const handleDownload = async (meme: MemeData) => {
+  if (!meme.imageUrl) {
+    ElMessage.error('图片地址无效，无法下载')
+    return
+  }
+
+  try {
+    await downloadImage(meme.imageUrl, meme.filename)
+    ElMessage.success(`${meme.filename} 下载成功`)
+  } catch (error) {
+    console.error('下载图片失败:', error)
+    ElMessage.error('下载失败，请重试')
+  }
 }
 
 const handleCopy = async (meme: MemeData) => {

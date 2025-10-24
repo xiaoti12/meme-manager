@@ -92,7 +92,9 @@
           type="primary"
           size="small"
           circle
-          @click.stop="$emit('download', meme)"
+          @click.stop="handleDownloadClick"
+          @touchstart.stop
+          @touchend.stop="handleDownloadClick"
           title="下载"
         >
           <el-icon size="14"><Download /></el-icon>
@@ -102,6 +104,8 @@
           size="small"
           circle
           @click.stop="handleDelete"
+          @touchstart.stop
+          @touchend.stop="handleDelete"
           title="删除"
         >
           <el-icon size="14"><Delete /></el-icon>
@@ -249,8 +253,28 @@ const handleImageError = () => {
   imageError.value = true
 }
 
+// 处理下载操作
+const handleDownloadClick = (event?: Event) => {
+  // 阻止事件冒泡,避免触发卡片的长按逻辑
+  if (event) {
+    event.stopPropagation()
+  }
+  // 清理长按计时器,确保不会触发长按选择
+  clearLongPressTimer()
+  // 触发下载事件
+  emit('download', props.meme)
+}
+
 // 处理删除操作
-const handleDelete = async () => {
+const handleDelete = async (event?: Event) => {
+  // 阻止事件冒泡
+  if (event) {
+    event.stopPropagation()
+  }
+  // 清理长按计时器
+  clearLongPressTimer()
+
+
   try {
     await ElMessageBox.confirm(
       `确定要删除 "${props.meme.filename}" 吗？\n\n删除的图片将被移到回收站，可以随时恢复。`,
