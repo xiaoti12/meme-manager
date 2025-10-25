@@ -1,5 +1,6 @@
 import { CloudinaryBrowserService } from './cloudinaryBrowser'
 import { LLMVisionService, OCRService, AIVisionService } from './ocr'
+import { generateOptimizedUrlForMeme } from './cloudinaryUrl'
 import type { MemeData, CategoryType } from '@/types'
 
 export interface ProcessingProgress {
@@ -117,10 +118,14 @@ export class UploadService {
         message: '正在保存数据...'
       })
 
+      // 生成优化 URL（如果是 Cloudinary URL）
+      const optimizedUrl = generateOptimizedUrlForMeme(imageUrl)
+
       const memeData: MemeData = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         filename: file.name,
         imageUrl,
+        optimizedUrl: optimizedUrl !== imageUrl ? optimizedUrl : undefined, // 只有当优化 URL 与原始 URL 不同时才保存
         category,
         ocrText: llmResult.text,
         aiDescription: llmResult.description,

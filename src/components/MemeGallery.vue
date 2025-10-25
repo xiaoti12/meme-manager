@@ -175,7 +175,7 @@
           >
             <img
               v-if="meme.imageUrl"
-              :src="meme.imageUrl"
+              :src="meme.optimizedUrl || meme.imageUrl"
               :alt="meme.filename"
               class="w-full h-full object-cover"
             />

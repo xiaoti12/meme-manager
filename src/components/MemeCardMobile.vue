@@ -27,7 +27,7 @@
       <div class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative">
         <img
           v-if="meme.imageUrl && !imageError"
-          :src="meme.imageUrl"
+          :src="displayUrl"
           :alt="meme.filename"
           class="w-full h-full object-cover"
           loading="lazy"
@@ -230,6 +230,11 @@ const handleTouchCancel = () => {
 
 const imageError = ref(false)
 const imageLoaded = ref(false)
+
+// 显示 URL：优先使用 optimizedUrl，否则使用原始 imageUrl
+const displayUrl = computed(() => {
+  return props.meme.optimizedUrl || props.meme.imageUrl
+})
 
 const categoryTagType = computed(() => {
   switch (props.meme.category) {

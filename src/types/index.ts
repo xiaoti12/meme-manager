@@ -15,6 +15,7 @@ export interface MemeData {
   uploadDate: Date
   fileSize: number
   thumbnailUrl?: string
+  optimizedUrl?: string  // 优化后的低质量 URL（用于列表展示）
   width?: number
   height?: number
   format?: string

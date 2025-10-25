@@ -4,6 +4,7 @@ import Fuse from 'fuse.js'
 import type { MemeData, SearchFilters, CategoryType } from '@/types'
 import { ImportMode } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
+import { generateOptimizedUrlForMeme } from '@/utils/cloudinaryUrl'
 
 export const useMemeStore = defineStore('meme', () => {
   const memes = ref<MemeData[]>([])
@@ -412,15 +413,37 @@ export const useMemeStore = defineStore('meme', () => {
       if (stored) {
         const parsedData = JSON.parse(stored)
         // 数据验证和迁移
+        let needsSave = false
+
         memes.value = parsedData
           .filter((meme: any) => meme && meme.id)
-          .map((meme: any) => ({
-            ...meme,
-            uploadDate: new Date(meme.uploadDate),
-            // 数据迁移：为旧数据添加软删除字段
-            isDeleted: meme.isDeleted || false,
-            deletedAt: meme.deletedAt ? new Date(meme.deletedAt) : null
-          }))
+          .map((meme: any) => {
+            const migratedMeme = {
+              ...meme,
+              uploadDate: new Date(meme.uploadDate),
+              // 数据迁移：为旧数据添加软删除字段
+              isDeleted: meme.isDeleted || false,
+              deletedAt: meme.deletedAt ? new Date(meme.deletedAt) : null
+            }
+
+            // 数据迁移：为 Cloudinary 图片生成 optimizedUrl
+            if (migratedMeme.imageUrl && !migratedMeme.optimizedUrl) {
+              const optimizedUrl = generateOptimizedUrlForMeme(migratedMeme.imageUrl)
+              // 只有当优化 URL 与原始 URL 不同时才保存
+              if (optimizedUrl !== migratedMeme.imageUrl) {
+                migratedMeme.optimizedUrl = optimizedUrl
+                needsSave = true // 标记需要保存
+              }
+            }
+
+            return migratedMeme
+          })
+
+        // 如果有数据迁移，保存到 localStorage
+        if (needsSave) {
+          console.log('检测到 Cloudinary 图片，已自动生成优化 URL')
+          saveToStorage()
+        }
       }
 
       if (settings) {
@@ -624,6 +647,14 @@ export const useMemeStore = defineStore('meme', () => {
           processedMeme.category = 'default'
         }
 
+        // 数据迁移：为 Cloudinary 图片生成 optimizedUrl
+        if (processedMeme.imageUrl && !processedMeme.optimizedUrl) {
+          const optimizedUrl = generateOptimizedUrlForMeme(processedMeme.imageUrl)
+          if (optimizedUrl !== processedMeme.imageUrl) {
+            processedMeme.optimizedUrl = optimizedUrl
+          }
+        }
+
         return processedMeme
       })
 
@@ -690,6 +721,14 @@ export const useMemeStore = defineStore('meme', () => {
         if (!categories.some(cat => cat.id === processedImportMeme.category)) {
           console.warn(`表情包 "${importMeme.filename}" 的分类 "${importMeme.category}" 不存在，已设置为默认分类`)
           processedImportMeme.category = 'default'
+        }
+
+        // 数据迁移：为 Cloudinary 图片生成 optimizedUrl
+        if (processedImportMeme.imageUrl && !processedImportMeme.optimizedUrl) {
+          const optimizedUrl = generateOptimizedUrlForMeme(processedImportMeme.imageUrl)
+          if (optimizedUrl !== processedImportMeme.imageUrl) {
+            processedImportMeme.optimizedUrl = optimizedUrl
+          }
         }
 
         // 查找是否已存在相同ID的表情包
