@@ -126,45 +126,92 @@
         </div>
 
         <!-- 列表模式 -->
-        <div v-else class="space-y-4">
+        <div v-else class="space-y-3">
           <div
             v-for="meme in searchResults"
             :key="meme.id"
-            class="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm border cursor-pointer transition-all duration-200"
-            :class="{ 'border-blue-500 bg-blue-50': selectedIds.includes(meme.id) }"
+            class="bg-white rounded-xl overflow-hidden card-shadow transition-all duration-300 cursor-pointer meme-list-item"
+            :class="{
+              'selected': selectedIds.includes(meme.id),
+              'selection-mode': selectionMode
+            }"
             @click.stop="selectionMode ? toggleSelection(meme.id) : undefined"
           >
             <!-- 选择指示器 -->
-            <div v-if="selectionMode" class="flex-shrink-0">
-              <div
-                class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200"
-                :class="selectedIds.includes(meme.id)
-                  ? 'bg-blue-500 border-blue-500 text-white'
-                  : 'border-gray-300 hover:border-blue-500'"
-              >
-                <el-icon v-if="selectedIds.includes(meme.id)" class="text-xs"><Check /></el-icon>
-              </div>
+            <div v-if="selectionMode" class="selection-indicator" :class="{ 'selected': selectedIds.includes(meme.id) }">
+              <el-icon v-if="selectedIds.includes(meme.id)" class="check-icon"><Check /></el-icon>
+              <div v-else class="selection-circle"></div>
             </div>
 
-            <img
-              :src="meme.imageUrl"
-              :alt="meme.filename"
-              class="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-              @error="(e: any) => e.target.style.display = 'none'"
-            />
-            <div class="flex-1 min-w-0">
-              <h4 class="font-medium text-gray-900 truncate">{{ meme.filename }}</h4>
-              <p class="text-sm text-gray-500 truncate">{{ meme.aiDescription }}</p>
-              <div class="flex items-center gap-2 mt-1">
-                <el-tag size="small" :type="getCategoryType(meme.category)">{{ getCategoryLabel(meme.category) }}</el-tag>
-                <span class="text-xs text-gray-400">{{ formatFileSize(meme.fileSize) }}</span>
-                <span class="text-xs text-gray-400">{{ formatDate(meme.uploadDate) }}</span>
+            <!-- 横向布局：左侧图片 + 右侧信息 -->
+            <div class="flex items-center gap-3 p-3">
+              <!-- 左侧：表情包缩略图 -->
+              <div class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative">
+                <img
+                  :src="meme.imageUrl"
+                  :alt="meme.filename"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  @error="(e: any) => e.target.style.display = 'none'"
+                />
+
+                <!-- 分类标签 -->
+                <div class="absolute bottom-1 right-1">
+                  <el-tag
+                    size="small"
+                    class="text-xs px-1.5 py-0.5 category-tag"
+                    :style="{ backgroundColor: getCategoryColor(meme.category), borderColor: getCategoryColor(meme.category), color: 'white' }"
+                  >
+                    {{ getCategoryLabel(meme.category) }}
+                  </el-tag>
+                </div>
               </div>
-            </div>
-            <div v-if="!selectionMode" class="flex gap-2 flex-shrink-0">
-              <el-button size="small" @click="handleDownload(meme)">下载</el-button>
-              <el-button size="small" type="success" @click="handleCopy(meme)">复制</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(meme)">删除</el-button>
+
+              <!-- 右侧：信息区域 -->
+              <div class="flex-1 min-w-0 space-y-1.5">
+                <!-- OCR 文本 -->
+                <div v-if="meme.ocrText" class="flex items-center gap-1.5">
+                  <div class="flex-shrink-0 w-8 text-xs font-semibold text-green-600 uppercase">OCR</div>
+                  <div class="flex-1 min-w-0 bg-green-50 border-l-2 border-green-400 px-2 py-1 rounded-r text-xs text-gray-700 truncate">
+                    {{ meme.ocrText || '无文字内容' }}
+                  </div>
+                </div>
+
+                <!-- AI 分析 -->
+                <div v-if="meme.aiDescription" class="flex items-center gap-1.5">
+                  <div class="flex-shrink-0 w-8 text-xs font-semibold text-blue-600 uppercase">AI</div>
+                  <div class="flex-1 min-w-0 bg-blue-50 border-l-2 border-blue-400 px-2 py-1 rounded-r text-xs text-gray-700 truncate">
+                    {{ meme.aiDescription || '无描述' }}
+                  </div>
+                </div>
+
+                <!-- 如果既没有 OCR 也没有 AI 描述，显示文件名 -->
+                <div v-if="!meme.ocrText && !meme.aiDescription" class="text-sm text-gray-600 truncate">
+                  {{ meme.filename }}
+                </div>
+              </div>
+
+              <!-- 右侧：操作按钮（仅在非选择模式显示） -->
+              <div v-if="!selectionMode" class="flex-shrink-0 flex flex-col gap-1.5 justify-center items-end">
+                <el-button
+                  type="primary"
+                  size="small"
+                  circle
+                  @click.stop="handleDownload(meme)"
+                  title="下载"
+                >
+                  <el-icon size="14"><Download /></el-icon>
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  @click.stop="handleDelete(meme)"
+                  title="删除"
+                >
+                  <el-icon size="14"><Delete /></el-icon>
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -201,7 +248,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { Search, Check, Select } from '@element-plus/icons-vue'
+import { Search, Check, Select, Download, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import MemeCard from '@/components/MemeCard.vue'
@@ -423,11 +470,20 @@ const getCategoryType = (category: CategoryType) => {
 }
 
 const getCategoryLabel = (category: CategoryType) => {
+  const categoryData = CategoryManager.getCategoryById(category)
+  if (categoryData) {
+    return categoryData.name
+  }
   const labelMap: Record<string, string> = {
     default: '默认',
     all: '全部'
   }
   return labelMap[category] || '未知'
+}
+
+const getCategoryColor = (category: CategoryType) => {
+  const categoryData = CategoryManager.getCategoryById(category)
+  return categoryData?.color || '#409eff'
 }
 
 const formatFileSize = (size: number) => {
@@ -484,5 +540,94 @@ onMounted(() => {
 <style scoped>
 .container {
   max-width: 1200px;
+}
+
+/* 列表模式样式 */
+.meme-list-item {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.meme-list-item.selection-mode {
+  cursor: pointer;
+}
+
+.meme-list-item.selected {
+  border: 2px solid #409eff;
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.1);
+}
+
+.selection-indicator {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selection-indicator.selected {
+  background: #409eff;
+  color: white;
+  transform: scale(1.1);
+}
+
+.selection-circle {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #409eff;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.check-icon {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* 选择模式下的悬停效果 */
+.meme-list-item.selection-mode:hover:not(.selected) {
+  border: 2px solid rgba(64, 158, 255, 0.3);
+}
+
+.meme-list-item.selection-mode:hover .selection-indicator:not(.selected) {
+  background: #409eff;
+}
+
+.meme-list-item.selection-mode:hover .selection-circle {
+  background: white;
+  border-color: white;
+}
+
+/* 分类标签样式 */
+.category-tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  min-height: 14px;
+  line-height: 12px;
+  border: none;
+  font-weight: 500;
+}
+
+/* 文本截断 */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 按钮尺寸调整 */
+:deep(.el-button.is-circle) {
+  padding: 6px;
+  width: 28px;
+  height: 28px;
 }
 </style>
