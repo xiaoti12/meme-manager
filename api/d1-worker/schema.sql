@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS meme_groups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
-  group_id TEXT NOT NULL,
+  group_id TEXT UNIQUE NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
