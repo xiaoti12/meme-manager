@@ -101,3 +101,10 @@ export interface SyncData {
   exportDate: string
   version: string
 }
+
+export interface D1SyncConfig {
+  enabled: boolean
+  username: string          // 用户名（数据隔离 key）
+  groupId?: string          // 缓存的 group_id（自动获取后存储）
+  showSyncButtons: boolean  // 是否显示同步/删除按钮
+}

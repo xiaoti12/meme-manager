@@ -11,11 +11,14 @@
       <!-- WebDAV 配置 -->
       <WebDAVConfig ref="webdavConfigRef" @config-saved="handleWebDAVConfigSaved" />
 
+      <!-- D1 云端存储配置 -->
+      <D1SyncConfig @config-saved="handleD1ConfigSaved" />
+
       <!-- 数据操作 -->
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-4 md:p-8 card-shadow">
         <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-4 md:mb-6">🔄 数据操作</h2>
 
-        <div class="grid md:grid-cols-2 gap-4 md:gap-8">
+        <div class="grid gap-4 md:gap-8" :class="d1ShowSyncButtons && d1Enabled ? 'md:grid-cols-3' : 'md:grid-cols-2'">
           <!-- 本地操作 -->
           <div class="space-y-3 md:space-y-4">
             <h3 class="text-base md:text-lg font-medium text-gray-700 mb-3 md:mb-4">💻 本地文件操作</h3>
@@ -134,6 +137,50 @@
             </div>
 
           </div>
+
+          <!-- D1 云端操作（仅 showSyncButtons 启用时显示） -->
+          <div v-if="d1ShowSyncButtons && d1Enabled" class="space-y-3 md:space-y-4">
+            <h3 class="text-base md:text-lg font-medium text-gray-700 mb-3 md:mb-4">🗄️ D1 数据库操作</h3>
+
+            <!-- 同步到 D1 -->
+            <div class="p-3 md:p-4 border border-gray-200 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0 mr-3">
+                  <h4 class="font-medium text-gray-700">同步到 D1</h4>
+                  <p class="text-xs md:text-sm text-gray-500">将全部本地数据覆盖写入 D1 远程数据库</p>
+                </div>
+                <el-button
+                  type="primary"
+                  :size="isMobile ? 'small' : 'default'"
+                  @click="syncToD1"
+                  :loading="d1Syncing"
+                  class="flex-shrink-0 data-sync-btn"
+                >
+                  ☁️ 同步
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 删除 D1 远程数据 -->
+            <div class="p-3 md:p-4 border border-red-100 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0 mr-3">
+                  <h4 class="font-medium text-red-600">删除 D1 远程数据</h4>
+                  <p class="text-xs md:text-sm text-gray-500">清空 D1 中该用户的所有表情包数据（不影响本地）</p>
+                </div>
+                <el-button
+                  type="danger"
+                  :size="isMobile ? 'small' : 'default'"
+                  @click="deleteD1Data"
+                  :loading="d1Deleting"
+                  class="flex-shrink-0 data-sync-btn"
+                >
+                  🗑️ 删除
+                </el-button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -173,8 +220,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
+import { getD1Config, saveD1Config, getOrCreateGroup, syncAllToRemote, deleteAllRemoteData } from '@/utils/d1Service'
 import WebDAVConfig from '@/components/WebDAVConfig.vue'
+import D1SyncConfig from '@/components/D1SyncConfig.vue'
 import { ImportMode } from '@/types'
+import type { D1SyncConfig as D1SyncConfigType } from '@/types'
 
 // Store
 const memeStore = useMemeStore()
@@ -194,6 +244,12 @@ const webdavImportMode = ref<ImportMode>(ImportMode.OVERWRITE)
 
 // 数据状态
 const webdavEnabled = ref(false)
+
+// D1 状态
+const d1Enabled = ref(false)
+const d1ShowSyncButtons = ref(true)
+const d1Syncing = ref(false)
+const d1Deleting = ref(false)
 
 // 移动端检测
 const isMobile = ref(false)
@@ -219,6 +275,88 @@ const operationHistory = ref<Array<{
 const refreshWebDAVStatus = () => {
   const config = getWebDAVConfig()
   webdavEnabled.value = config?.enabled || false
+}
+
+// 刷新 D1 状态
+const refreshD1Status = () => {
+  const config = getD1Config()
+  d1Enabled.value = config.enabled && !!config.username
+  d1ShowSyncButtons.value = config.showSyncButtons
+}
+
+// D1 配置保存事件处理
+const handleD1ConfigSaved = (config: D1SyncConfigType) => {
+  d1Enabled.value = config.enabled && !!config.username
+  d1ShowSyncButtons.value = config.showSyncButtons
+}
+
+// 同步到 D1
+const syncToD1 = async () => {
+  const config = getD1Config()
+  if (!config.enabled || !config.username) {
+    ElMessage.error('请先启用并配置 D1 同步')
+    return
+  }
+
+  d1Syncing.value = true
+  try {
+    let groupId = config.groupId
+    if (!groupId) {
+      groupId = await getOrCreateGroup(config.username)
+    }
+
+    const allMemes = memeStore.memes
+    const result = await syncAllToRemote(groupId, allMemes)
+    const msg = `同步成功，共写入 ${result.count} 条数据`
+    ElMessage.success(msg)
+    addOperationRecord('D1 全量同步', true, msg)
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : '未知错误'
+    ElMessage.error(`D1 同步失败：${errMsg}`)
+    addOperationRecord('D1 全量同步', false, errMsg)
+  } finally {
+    d1Syncing.value = false
+  }
+}
+
+// 删除 D1 远程数据
+const deleteD1Data = async () => {
+  const config = getD1Config()
+  if (!config.enabled || !config.username) {
+    ElMessage.error('请先启用并配置 D1 同步')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      '此操作将清空 D1 中该用户的所有表情包数据，本地数据不受影响，是否继续？',
+      '确认删除远程数据',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+
+  d1Deleting.value = true
+  try {
+    let groupId = config.groupId
+    if (!groupId) {
+      groupId = await getOrCreateGroup(config.username)
+    }
+
+    await deleteAllRemoteData(groupId)
+    // 清除缓存的 groupId，让下次操作重新获取
+    saveD1Config({ ...config, groupId: undefined })
+
+    ElMessage.success('D1 远程数据已清空')
+    addOperationRecord('D1 删除远程数据', true, '已清空远程所有表情包数据')
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : '未知错误'
+    ElMessage.error(`D1 删除失败：${errMsg}`)
+    addOperationRecord('D1 删除远程数据', false, errMsg)
+  } finally {
+    d1Deleting.value = false
+  }
 }
 
 // 格式化时间
@@ -379,9 +517,10 @@ const handleWebDAVConfigSaved = () => {
   refreshWebDAVStatus()
 }
 
-// 组件挂载时初始化WebDAV状态
+// 组件挂载时初始化WebDAV和D1状态
 onMounted(() => {
   refreshWebDAVStatus()
+  refreshD1Status()
   checkMobile()
   resizeHandler = checkMobile
   window.addEventListener('resize', resizeHandler)

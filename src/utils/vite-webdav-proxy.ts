@@ -1,5 +1,89 @@
 import type { Plugin } from 'vite'
+import { loadEnv } from 'vite'
 import type { IncomingMessage, ServerResponse } from 'http'
+
+export function d1Proxy(): Plugin {
+  let workerBaseUrl: string | undefined
+
+  return {
+    name: 'd1-proxy',
+    config(_, { mode }) {
+      // 使用 Vite 的 loadEnv 读取 .env / .env.local 等文件中的变量
+      // 第三个参数传 '' 以读取所有前缀（含 VITE_ 前缀）的变量
+      const env = loadEnv(mode, process.cwd(), '')
+      workerBaseUrl = env.VITE_D1_API_BASE_URL
+    },
+    configureServer(server) {
+      server.middlewares.use('/api/d1-proxy', async (req: IncomingMessage, res: ServerResponse) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (!workerBaseUrl) {
+          res.statusCode = 503
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'D1 API not configured (VITE_D1_API_BASE_URL missing)' }))
+          return
+        }
+
+        try {
+          // 剥离 /api/d1-proxy 前缀，保留子路径和 query string
+          const reqUrl = req.url || ''
+          const subPath = reqUrl.startsWith('/') ? reqUrl : `/${reqUrl}`
+          const targetUrl = `${workerBaseUrl.replace(/\/$/, '')}${subPath}`
+
+          console.log('[d1-proxy] 转发请求:', req.method, targetUrl)
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          }
+
+          let body: string | undefined
+          if (req.method !== 'GET' && req.method !== 'HEAD') {
+            const chunks: Buffer[] = []
+            for await (const chunk of req) {
+              chunks.push(chunk as Buffer)
+            }
+            if (chunks.length > 0) {
+              body = Buffer.concat(chunks).toString()
+            }
+          }
+
+          const response = await fetch(targetUrl, {
+            method: req.method,
+            headers,
+            body,
+          })
+
+          res.statusCode = response.status
+          response.headers.forEach((value, key) => {
+            const skipHeaders = ['content-encoding', 'transfer-encoding', 'connection']
+            if (!skipHeaders.includes(key.toLowerCase())) {
+              res.setHeader(key, value)
+            }
+          })
+
+          const responseText = await response.text()
+          res.end(responseText)
+        } catch (error) {
+          console.error('[d1-proxy] 代理错误:', error)
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({
+            error: 'Proxy request failed',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          }))
+        }
+      })
+    },
+  }
+}
 
 export function webdavProxy(): Plugin {
   return {

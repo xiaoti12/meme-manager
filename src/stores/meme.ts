@@ -5,6 +5,13 @@ import type { MemeData, SearchFilters, CategoryType } from '@/types'
 import { ImportMode } from '@/types'
 import { CategoryManager } from '@/utils/categoryManager'
 import { generateOptimizedUrlForMeme } from '@/utils/cloudinaryUrl'
+import {
+  getD1Config,
+  getOrCreateGroup,
+  addRemoteMeme,
+  updateRemoteMeme,
+  deleteRemoteMeme,
+} from '@/utils/d1Service'
 
 export const useMemeStore = defineStore('meme', () => {
   const memes = ref<MemeData[]>([])
@@ -207,11 +214,60 @@ export const useMemeStore = defineStore('meme', () => {
     }
   }
 
+  // ─── D1 远程同步（fire-and-forget，失败不阻塞本地操作）────────────────────
+
+  const ensureD1GroupId = async (): Promise<string | null> => {
+    const config = getD1Config()
+    if (!config.enabled || !config.username) return null
+    if (config.groupId) return config.groupId
+    try {
+      return await getOrCreateGroup(config.username)
+    } catch (e) {
+      console.warn('[D1] 获取 group_id 失败:', e)
+      return null
+    }
+  }
+
+  const syncAddToD1 = (meme: MemeData) => {
+    ensureD1GroupId().then(groupId => {
+      if (!groupId) return
+      addRemoteMeme(groupId, meme).catch(e => console.warn('[D1] addRemoteMeme 失败:', e))
+    })
+  }
+
+  const syncSoftDeleteToD1 = (meme: MemeData) => {
+    ensureD1GroupId().then(groupId => {
+      if (!groupId) return
+      updateRemoteMeme(meme.id, { isDeleted: true, deletedAt: meme.deletedAt }).catch(
+        e => console.warn('[D1] updateRemoteMeme 失败:', e)
+      )
+    })
+  }
+
+  const syncRestoreToD1 = (meme: MemeData) => {
+    ensureD1GroupId().then(groupId => {
+      if (!groupId) return
+      updateRemoteMeme(meme.id, { isDeleted: false, deletedAt: null }).catch(
+        e => console.warn('[D1] updateRemoteMeme (restore) 失败:', e)
+      )
+    })
+  }
+
+  const syncHardDeleteToD1 = (id: string) => {
+    ensureD1GroupId().then(groupId => {
+      if (!groupId) return
+      deleteRemoteMeme(id).catch(e => console.warn('[D1] deleteRemoteMeme 失败:', e))
+    })
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   // 添加表情包
   const addMeme = (meme: MemeData) => {
     memes.value.push(meme)
     updateFuseInstance()
     saveToStorage()
+    syncAddToD1(meme)
   }
 
   // 删除表情包（软删除）
@@ -222,6 +278,7 @@ export const useMemeStore = defineStore('meme', () => {
       meme.deletedAt = new Date()
       updateFuseInstance()
       saveToStorage()
+      syncSoftDeleteToD1(meme)
       return true
     }
     return false
@@ -306,6 +363,7 @@ export const useMemeStore = defineStore('meme', () => {
       meme.deletedAt = null
       updateFuseInstance()
       saveToStorage()
+      syncRestoreToD1(meme)
       return true
     }
     return false
@@ -340,6 +398,7 @@ export const useMemeStore = defineStore('meme', () => {
       memes.value.splice(index, 1)
       updateFuseInstance()
       saveToStorage()
+      syncHardDeleteToD1(id)
       return true
     }
     return false
