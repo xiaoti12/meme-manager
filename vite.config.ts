@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import { webdavProxy } from './src/utils/vite-webdav-proxy'
+import { webdavProxy, d1Proxy } from './src/utils/vite-webdav-proxy'
 
 export default defineConfig({
-  plugins: [vue(), webdavProxy()],
+  plugins: [vue(), webdavProxy(), d1Proxy()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')

@@ -7,12 +7,19 @@
   "functions": {
     "api/webdav-proxy.js": {
       "maxDuration": 30
+    },
+    "api/d1-proxy.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/api/webdav-proxy",
       "destination": "/api/webdav-proxy.js"
+    },
+    {
+      "source": "/api/d1-proxy/:path*",
+      "destination": "/api/d1-proxy.js"
     },
     {
       "source": "/((?!api).*)",
