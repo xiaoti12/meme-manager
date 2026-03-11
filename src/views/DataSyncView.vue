@@ -12,7 +12,7 @@
       <WebDAVConfig ref="webdavConfigRef" @config-saved="handleWebDAVConfigSaved" />
 
       <!-- D1 云端存储配置 -->
-      <D1SyncConfig @config-saved="handleD1ConfigSaved" />
+      <D1SyncConfig @config-saved="handleD1ConfigSaved" @remote-data-loaded="handleD1RemoteDataLoaded" />
 
       <!-- 数据操作 -->
       <div class="glass-effect backdrop-blur-custom rounded-3xl p-4 md:p-8 card-shadow">
@@ -224,7 +224,7 @@ import { getD1Config, saveD1Config, getOrCreateGroup, syncAllToRemote, deleteAll
 import WebDAVConfig from '@/components/WebDAVConfig.vue'
 import D1SyncConfig from '@/components/D1SyncConfig.vue'
 import { ImportMode } from '@/types'
-import type { D1SyncConfig as D1SyncConfigType } from '@/types'
+import type { D1SyncConfig as D1SyncConfigType, MemeData } from '@/types'
 
 // Store
 const memeStore = useMemeStore()
@@ -288,6 +288,18 @@ const refreshD1Status = () => {
 const handleD1ConfigSaved = (config: D1SyncConfigType) => {
   d1Enabled.value = config.enabled && !!config.username
   d1ShowSyncButtons.value = config.showSyncButtons
+}
+
+// D1 远程数据拉取完成后合并到本地
+const handleD1RemoteDataLoaded = (remoteMemes: MemeData[]) => {
+  if (!remoteMemes.length) return
+
+  const success = memeStore.importDataWithMode({ memes: remoteMemes }, ImportMode.MERGE)
+  if (success) {
+    addOperationRecord('D1 拉取远程数据', true, `合并 ${remoteMemes.length} 条记录到本地`)
+  } else {
+    addOperationRecord('D1 拉取远程数据', false, '合并失败')
+  }
 }
 
 // 同步到 D1

@@ -60,10 +60,12 @@
           type="primary"
           :size="isMobile ? 'default' : 'large'"
           @click="saveConfig"
+          :loading="saving"
           :disabled="!localConfig.username.trim()"
           class="w-full md:w-auto"
         >
-          💾 保存配置
+          <span v-if="!saving">💾 保存配置</span>
+          <span v-else>保存中...</span>
         </el-button>
 
         <el-button
@@ -105,11 +107,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
-import type { D1SyncConfig } from '@/types'
-import { getD1Config, saveD1Config, getOrCreateGroup } from '@/utils/d1Service'
+import type { D1SyncConfig, MemeData } from '@/types'
+import { getD1Config, saveD1Config, getOrCreateGroup, fetchRemoteMemes } from '@/utils/d1Service'
 
 const emit = defineEmits<{
   'config-saved': [config: D1SyncConfig]
+  'remote-data-loaded': [memes: MemeData[]]
 }>()
 
 const localConfig = ref<D1SyncConfig>({
@@ -120,6 +123,7 @@ const localConfig = ref<D1SyncConfig>({
 })
 
 const testing = ref(false)
+const saving = ref(false)
 const connectionStatus = ref<{ success: boolean; message: string } | null>(null)
 
 const isMobile = ref(false)
@@ -163,16 +167,45 @@ const testConnection = async () => {
   }
 }
 
-const saveConfig = () => {
+const saveConfig = async () => {
   if (!localConfig.value.username.trim()) {
     ElMessage.error('请先输入用户名')
     return
   }
 
-  saveD1Config(localConfig.value)
-  ElMessage.success('D1 配置已保存')
+  saving.value = true
   connectionStatus.value = null
-  emit('config-saved', localConfig.value)
+
+  try {
+    const username = localConfig.value.username.trim()
+
+    // 获取或创建组 ID
+    const groupId = await getOrCreateGroup(username)
+    localConfig.value.groupId = groupId
+
+    // 保存配置（含最新 groupId）
+    saveD1Config(localConfig.value)
+    emit('config-saved', localConfig.value)
+
+    // 拉取远程 memes 并缓存到本地
+    const remoteMemes = await fetchRemoteMemes(groupId)
+    emit('remote-data-loaded', remoteMemes)
+
+    connectionStatus.value = {
+      success: true,
+      message: `配置已保存，数据组 ID：${groupId}，已拉取 ${remoteMemes.length} 条远程记录`,
+    }
+    ElMessage.success(`配置已保存，拉取到 ${remoteMemes.length} 条远程记录`)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : '未知错误'
+    // 即使远程失败，本地配置也已保存
+    saveD1Config(localConfig.value)
+    emit('config-saved', localConfig.value)
+    connectionStatus.value = { success: false, message: `配置已保存，但拉取远程数据失败：${msg}` }
+    ElMessage.warning(`配置已保存，但拉取远程数据失败：${msg}`)
+  } finally {
+    saving.value = false
+  }
 }
 
 const resetConfig = () => {
