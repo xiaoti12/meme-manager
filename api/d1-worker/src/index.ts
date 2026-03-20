@@ -60,6 +60,22 @@ interface MemeData {
   deletedAt?: string | null
 }
 
+interface CategoryRow {
+  id: string
+  group_id: string
+  name: string
+  color: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface CategoryData {
+  id: string
+  name: string
+  color?: string | null
+  createdAt: string
+}
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -96,6 +112,15 @@ function memeRowToData(row: MemeRow): MemeData {
     cloudinaryId: row.cloudinary_id,
     isDeleted: row.is_deleted === 1,
     deletedAt: row.deleted_at,
+  }
+}
+
+function categoryRowToData(row: CategoryRow): CategoryData {
+  return {
+    id: row.id,
+    name: row.name,
+    color: row.color,
+    createdAt: row.created_at,
   }
 }
 
@@ -140,6 +165,22 @@ export default {
       const deleteMatch = path.match(/^\/memes\/(.+)$/)
       if (deleteMatch && method === 'DELETE') {
         return handleDeleteMeme(deleteMatch[1], env)
+      }
+
+      // GET /categories?group_id=xxx
+      if (path === '/categories' && method === 'GET') {
+        return handleGetCategories(url, env)
+      }
+
+      // POST /categories
+      if (path === '/categories' && method === 'POST') {
+        return handleAddCategory(request, env)
+      }
+
+      // DELETE /categories/:id?group_id=xxx
+      const deleteCategoryMatch = path.match(/^\/categories\/(.+)$/)
+      if (deleteCategoryMatch && method === 'DELETE') {
+        return handleDeleteCategory(deleteCategoryMatch[1], url, env)
       }
 
       // POST /sync
@@ -298,18 +339,73 @@ async function handleDeleteMeme(id: string, env: Env): Promise<Response> {
   return jsonResponse({ success: true, id })
 }
 
-// POST /sync — 全量覆盖
+// GET /categories?group_id=xxx
+async function handleGetCategories(url: URL, env: Env): Promise<Response> {
+  const groupId = url.searchParams.get('group_id')
+  if (!groupId) return errorResponse('Missing group_id')
+
+  const { results } = await env.DB.prepare(
+    'SELECT * FROM categories WHERE group_id = ? ORDER BY created_at ASC'
+  ).bind(groupId).all<CategoryRow>()
+
+  return jsonResponse({ categories: results.map(categoryRowToData) })
+}
+
+// POST /categories
+async function handleAddCategory(request: Request, env: Env): Promise<Response> {
+  const body = await request.json() as { group_id: string } & CategoryData
+  const { group_id, ...cat } = body
+
+  if (!group_id || !cat.id) return errorResponse('Missing group_id or id')
+
+  await env.DB.prepare(`
+    INSERT INTO categories (id, group_id, name, color, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(id, group_id) DO UPDATE SET
+      name = excluded.name,
+      color = excluded.color,
+      updated_at = datetime('now')
+  `).bind(
+    cat.id,
+    group_id,
+    cat.name,
+    cat.color || null,
+    cat.createdAt || new Date().toISOString(),
+  ).run()
+
+  return jsonResponse({ success: true, id: cat.id })
+}
+
+// DELETE /categories/:id?group_id=xxx
+async function handleDeleteCategory(id: string, url: URL, env: Env): Promise<Response> {
+  const groupId = url.searchParams.get('group_id')
+  if (!groupId) return errorResponse('Missing group_id')
+
+  await env.DB.prepare(
+    'DELETE FROM categories WHERE id = ? AND group_id = ?'
+  ).bind(id, groupId).run()
+
+  return jsonResponse({ success: true, id })
+}
+
+// POST /sync — 全量覆盖（memes + categories）
 async function handleSync(request: Request, env: Env): Promise<Response> {
-  const body = await request.json() as { group_id: string; memes: MemeData[] }
-  const { group_id, memes } = body
+  const body = await request.json() as { group_id: string; memes: MemeData[]; categories?: CategoryData[] }
+  const { group_id, memes, categories } = body
 
   if (!group_id) return errorResponse('Missing group_id')
   if (!Array.isArray(memes)) return errorResponse('memes must be an array')
 
-  // 事务：先清空该组所有数据，再批量插入
-  const statements = [
+  // 事务：先清空该组所有 memes（和可选的 categories），再批量插入
+  const statements: D1PreparedStatement[] = [
     env.DB.prepare('DELETE FROM memes WHERE group_id = ?').bind(group_id),
   ]
+
+  if (Array.isArray(categories)) {
+    statements.push(
+      env.DB.prepare('DELETE FROM categories WHERE group_id = ?').bind(group_id)
+    )
+  }
 
   for (const meme of memes) {
     statements.push(
@@ -341,17 +437,39 @@ async function handleSync(request: Request, env: Env): Promise<Response> {
     )
   }
 
+  for (const cat of (categories ?? [])) {
+    statements.push(
+      env.DB.prepare(`
+        INSERT INTO categories (id, group_id, name, color, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+      `).bind(
+        cat.id,
+        group_id,
+        cat.name,
+        cat.color || null,
+        cat.createdAt || new Date().toISOString(),
+      )
+    )
+  }
+
   await env.DB.batch(statements)
 
-  return jsonResponse({ success: true, count: memes.length })
+  return jsonResponse({
+    success: true,
+    count: memes.length,
+    categoryCount: (categories ?? []).length,
+  })
 }
 
-// DELETE /sync?group_id=xxx — 清空组数据
+// DELETE /sync?group_id=xxx — 清空组数据（memes + categories）
 async function handleDeleteSync(url: URL, env: Env): Promise<Response> {
   const groupId = url.searchParams.get('group_id')
   if (!groupId) return errorResponse('Missing group_id')
 
-  await env.DB.prepare('DELETE FROM memes WHERE group_id = ?').bind(groupId).run()
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM memes WHERE group_id = ?').bind(groupId),
+    env.DB.prepare('DELETE FROM categories WHERE group_id = ?').bind(groupId),
+  ])
 
   return jsonResponse({ success: true })
 }

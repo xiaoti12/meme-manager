@@ -221,10 +221,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useMemeStore } from '@/stores/meme'
 import { getWebDAVConfig, createWebDAVService } from '@/utils/webdavService'
 import { getD1Config, saveD1Config, getOrCreateGroup, syncAllToRemote, deleteAllRemoteData } from '@/utils/d1Service'
+import { CategoryManager } from '@/utils/categoryManager'
 import WebDAVConfig from '@/components/WebDAVConfig.vue'
 import D1SyncConfig from '@/components/D1SyncConfig.vue'
 import { ImportMode } from '@/types'
-import type { D1SyncConfig as D1SyncConfigType, MemeData } from '@/types'
+import type { D1SyncConfig as D1SyncConfigType, MemeData, Category } from '@/types'
 
 // Store
 const memeStore = useMemeStore()
@@ -291,12 +292,16 @@ const handleD1ConfigSaved = (config: D1SyncConfigType) => {
 }
 
 // D1 远程数据拉取完成后合并到本地
-const handleD1RemoteDataLoaded = (remoteMemes: MemeData[]) => {
-  if (!remoteMemes.length) return
+const handleD1RemoteDataLoaded = (remoteMemes: MemeData[], remoteCategories?: Category[]) => {
+  if (!remoteMemes.length && !remoteCategories?.length) return
 
-  const success = memeStore.importDataWithMode({ memes: remoteMemes }, ImportMode.MERGE)
+  const success = memeStore.importDataWithMode(
+    { memes: remoteMemes, categories: remoteCategories ?? [] },
+    ImportMode.MERGE
+  )
+  const catCount = remoteCategories?.length ?? 0
   if (success) {
-    addOperationRecord('D1 拉取远程数据', true, `合并 ${remoteMemes.length} 条记录到本地`)
+    addOperationRecord('D1 拉取远程数据', true, `合并 ${remoteMemes.length} 条记录、${catCount} 个分类到本地`)
   } else {
     addOperationRecord('D1 拉取远程数据', false, '合并失败')
   }
@@ -318,8 +323,9 @@ const syncToD1 = async () => {
     }
 
     const allMemes = memeStore.memes
-    const result = await syncAllToRemote(groupId, allMemes)
-    const msg = `同步成功，共写入 ${result.count} 条数据`
+    const allCategories = CategoryManager.getCategories()
+    const result = await syncAllToRemote(groupId, allMemes, allCategories)
+    const msg = `同步成功，共写入 ${result.count} 条数据、${result.categoryCount} 个分类`
     ElMessage.success(msg)
     addOperationRecord('D1 全量同步', true, msg)
   } catch (error) {

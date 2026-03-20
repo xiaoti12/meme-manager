@@ -1,4 +1,4 @@
-import type { MemeData, D1SyncConfig } from '@/types'
+import type { MemeData, Category, D1SyncConfig } from '@/types'
 
 const D1_CONFIG_KEY = 'd1-sync-config'
 
@@ -102,26 +102,42 @@ export async function fetchRemoteMemes(groupId: string): Promise<MemeData[]> {
   return result.memes
 }
 
+// ─── 分类 CRUD ───────────────────────────────────────────────────────────────
+
+export async function fetchRemoteCategories(groupId: string): Promise<Category[]> {
+  const result = await apiFetch<{ categories: Array<{ id: string; name: string; color?: string | null; createdAt: string }> }>(
+    `/categories?group_id=${encodeURIComponent(groupId)}`
+  )
+  return result.categories.map(c => ({
+    id: c.id,
+    name: c.name,
+    color: c.color ?? undefined,
+    createdAt: new Date(c.createdAt),
+  }))
+}
+
 // ─── 批量同步 ────────────────────────────────────────────────────────────────
 
 /**
- * 全量覆盖同步：将本地所有表情包写入 D1（事务操作，先清空再写入）
+ * 全量覆盖同步：将本地所有表情包和分类写入 D1（事务操作，先清空再写入）
  */
 export async function syncAllToRemote(
   groupId: string,
-  memes: MemeData[]
-): Promise<{ count: number }> {
-  return apiFetch<{ success: boolean; count: number }>('/sync', {
+  memes: MemeData[],
+  categories?: Category[]
+): Promise<{ count: number; categoryCount: number }> {
+  return apiFetch<{ success: boolean; count: number; categoryCount: number }>('/sync', {
     method: 'POST',
     body: JSON.stringify({
       group_id: groupId,
       memes: memes.map(normalizeMeme),
+      categories: categories?.map(normalizeCategory),
     }),
   })
 }
 
 /**
- * 清空 D1 中该组的所有表情包数据
+ * 清空 D1 中该组的所有表情包和分类数据
  */
 export async function deleteAllRemoteData(groupId: string): Promise<void> {
   await apiFetch(`/sync?group_id=${encodeURIComponent(groupId)}`, {
@@ -143,5 +159,19 @@ function normalizeMeme(meme: MemeData): MemeData {
     deletedAt: meme.deletedAt instanceof Date
       ? (meme.deletedAt as Date).toISOString()
       : meme.deletedAt ?? null,
+  }
+}
+
+/**
+ * 将 Category 中的 Date 对象序列化为字符串
+ */
+function normalizeCategory(cat: Category): { id: string; name: string; color?: string; createdAt: string } {
+  return {
+    id: cat.id,
+    name: cat.name,
+    color: cat.color,
+    createdAt: cat.createdAt instanceof Date
+      ? cat.createdAt.toISOString()
+      : (cat.createdAt as string),
   }
 }

@@ -107,12 +107,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
-import type { D1SyncConfig, MemeData } from '@/types'
-import { getD1Config, saveD1Config, getOrCreateGroup, fetchRemoteMemes } from '@/utils/d1Service'
+import type { D1SyncConfig, MemeData, Category } from '@/types'
+import { getD1Config, saveD1Config, getOrCreateGroup, fetchRemoteMemes, fetchRemoteCategories } from '@/utils/d1Service'
 
 const emit = defineEmits<{
   'config-saved': [config: D1SyncConfig]
-  'remote-data-loaded': [memes: MemeData[]]
+  'remote-data-loaded': [memes: MemeData[], categories: Category[]]
 }>()
 
 const localConfig = ref<D1SyncConfig>({
@@ -187,15 +187,18 @@ const saveConfig = async () => {
     saveD1Config(localConfig.value)
     emit('config-saved', localConfig.value)
 
-    // 拉取远程 memes 并缓存到本地
-    const remoteMemes = await fetchRemoteMemes(groupId)
-    emit('remote-data-loaded', remoteMemes)
+    // 并行拉取远程 memes 和 categories
+    const [remoteMemes, remoteCategories] = await Promise.all([
+      fetchRemoteMemes(groupId),
+      fetchRemoteCategories(groupId),
+    ])
+    emit('remote-data-loaded', remoteMemes, remoteCategories)
 
     connectionStatus.value = {
       success: true,
-      message: `配置已保存，数据组 ID：${groupId}，已拉取 ${remoteMemes.length} 条远程记录`,
+      message: `配置已保存，数据组 ID：${groupId}，已拉取 ${remoteMemes.length} 条记录、${remoteCategories.length} 个分类`,
     }
-    ElMessage.success(`配置已保存，拉取到 ${remoteMemes.length} 条远程记录`)
+    ElMessage.success(`配置已保存，拉取到 ${remoteMemes.length} 条记录、${remoteCategories.length} 个分类`)
   } catch (error) {
     const msg = error instanceof Error ? error.message : '未知错误'
     // 即使远程失败，本地配置也已保存

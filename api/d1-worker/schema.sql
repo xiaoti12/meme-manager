@@ -30,3 +30,16 @@ CREATE TABLE IF NOT EXISTS memes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_memes_group_id ON memes(group_id);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT NOT NULL,
+  group_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (id, group_id),
+  FOREIGN KEY (group_id) REFERENCES meme_groups(group_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_categories_group_id ON categories(group_id);
