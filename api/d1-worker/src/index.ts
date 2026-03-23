@@ -155,6 +155,11 @@ export default {
         return handleAddMeme(request, env)
       }
 
+      // GET /memes/simple?group_id=xxx
+      if (path === '/memes/simple' && method === 'GET') {
+        return handleGetMemesSimple(url, env)
+      }
+
       // PUT /memes/:id
       const putMatch = path.match(/^\/memes\/(.+)$/)
       if (putMatch && method === 'PUT') {
@@ -337,6 +342,26 @@ async function handleUpdateMeme(id: string, request: Request, env: Env): Promise
 async function handleDeleteMeme(id: string, env: Env): Promise<Response> {
   await env.DB.prepare('DELETE FROM memes WHERE id = ?').bind(id).run()
   return jsonResponse({ success: true, id })
+}
+
+// GET /memes/simple?group_id=xxx
+async function handleGetMemesSimple(url: URL, env: Env): Promise<Response> {
+  const groupId = url.searchParams.get('group_id')
+  if (!groupId) return errorResponse('Missing group_id')
+
+  const { results } = await env.DB.prepare(
+    'SELECT id, filename, image_url, ocr_text, ai_description FROM memes WHERE group_id = ? ORDER BY upload_date DESC'
+  ).bind(groupId).all<{ id: string; filename: string; image_url: string; ocr_text: string; ai_description: string }>()
+
+  return jsonResponse({
+    memes: results.map(row => ({
+      id: row.id,
+      filename: row.filename,
+      imageUrl: row.image_url,
+      ocrText: row.ocr_text,
+      aiDescription: row.ai_description,
+    }))
+  })
 }
 
 // GET /categories?group_id=xxx
